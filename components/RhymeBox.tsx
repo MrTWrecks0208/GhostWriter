@@ -13,9 +13,9 @@ interface RhymeBoxProps {
 const RhymeBox: React.FC<RhymeBoxProps> = ({ word, rhymes, isLoading, error, onSelectRhyme, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#1d2951] rounded-2xl shadow-2xl w-full max-w-sm p-6 m-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-main rounded-2xl shadow-2xl w-full max-w-sm p-6 m-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-light to-accent">
             Rhymes for "{word}"
             </h2>
             <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
@@ -23,7 +23,7 @@ const RhymeBox: React.FC<RhymeBoxProps> = ({ word, rhymes, isLoading, error, onS
         
         {isLoading && (
             <div className="flex justify-center items-center h-48">
-                <SpinnerIcon className="w-10 h-10 text-purple-400" />
+                <SpinnerIcon className="w-10 h-10 text-accent-light" />
             </div>
         )}
 
@@ -49,7 +49,7 @@ const RhymeBox: React.FC<RhymeBoxProps> = ({ word, rhymes, isLoading, error, onS
                                 onSelectRhyme(rhyme);
                                 onClose();
                             }}
-                            className="px-3 py-1 bg-gray-700 hover:bg-[#1d2951] rounded-md transition duration-200 text-white font-medium"
+                            className="px-3 py-1 bg-gray-700 hover:bg-main rounded-md transition duration-200 text-white font-medium"
                         >
                             {rhyme}
                         </button>

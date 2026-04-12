@@ -91,7 +91,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
         className={`p-3 rounded-full transition-all duration-300 ${
           isRecording 
             ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20' 
-            : 'bg-[#1d2951] hover:bg-[#151e3d]'
+            : 'bg-main hover:bg-main-dark'
         }`}
         aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
       >

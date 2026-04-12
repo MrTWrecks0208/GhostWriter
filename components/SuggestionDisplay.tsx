@@ -64,7 +64,7 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
                 >
                     <ClearIcon className="w-3.5 h-3.5" />
                 </button>
-                <div className="markdown-body prose prose-invert prose-p:text-gray-300 prose-p:mb-4 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-purple-400 prose-headings:to-pink-500 prose-li:text-gray-300">
+                <div className="markdown-body prose prose-invert prose-p:text-gray-300 prose-p:mb-4 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-accent-light prose-headings:to-accent prose-li:text-gray-300">
                     <ReactMarkdown>{suggestion}</ReactMarkdown>
                 </div>
 
@@ -98,7 +98,7 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
                     <div className="mt-4 flex justify-center">
                         <button
                             onClick={() => onSuggestionSelect(SuggestionType.IMPROVE)}
-                            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-full shadow-lg transform transition hover:scale-105 active:scale-95"
+                            className="px-6 py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent text-white font-bold rounded-full shadow-lg transform transition hover:scale-105 active:scale-95"
                         >
                             Would you like some suggestions on improving these lyrics?
                         </button>
@@ -120,12 +120,12 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
                                 }
                             }}
                             placeholder="Type your feedback here to guide the next suggestion..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-12 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all resize-none min-h-[80px]"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-12 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all resize-none min-h-[80px]"
                         />
                         <button
                             onClick={onRegenerate}
                             disabled={!feedback.trim() || isLoading}
-                            className="absolute bottom-3 right-3 p-2 bg-[#1d2951] hover:bg-[#151e3d] disabled:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-all"
+                            className="absolute bottom-3 right-3 p-2 bg-main hover:bg-main-dark disabled:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-all"
                             aria-label="Submit feedback"
                         >
                             <PaperAirplaneIcon className="w-4 h-4" />

@@ -69,14 +69,14 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1d2951]">
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-main">
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#1d2951]">
+    <div className="min-h-screen bg-main">
       {view === 'landing' && !user && <Landing onStart={handleStart} />}
       {view === 'projects' && user && (
         <ProjectList onSelectProject={handleSelectProject} onGoToPricing={handleGoToPricing} onGoToSettings={handleGoToSettings} />

@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { SuggestionType, Companion, ChatMessage, Project, AudioClip } from '../types';
+import { doc, onSnapshot, updateDoc, getDoc, collection, addDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from '../firebase';
+import { SuggestionType, Companion, ChatMessage, Project, AudioClip, ProjectVersion } from '../types';
 import { getAiSuggestion, getRhymes } from '../services/geminiService';
 import { GoogleGenAI, Chat, Modality } from "@google/genai";
 import { motion } from 'motion/react';
@@ -13,6 +14,7 @@ import CompanionSelector from './CompanionSelector';
 import RhymeBox from './RhymeBox';
 import AudioRecorder from './AudioRecorder';
 import AudioClipList from './AudioClipList';
+import VersionHistory from './VersionHistory';
 import { companions } from '../companions';
 import { POPULAR_ARTISTS, POPULAR_GENRES } from '../constants';
 import { BackArrowIcon } from './icons/BackArrowIcon';
@@ -20,6 +22,7 @@ import { PencilIcon } from './icons/PencilIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { RecordIcon } from './icons/RecordIcon';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
+import { History as HistoryIcon } from 'lucide-react';
 
 import { handleFirestoreError, OperationType } from '../services/firestoreUtils';
 
@@ -45,7 +48,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     const [isLoaded, setIsLoaded] = useState(false);
 
     // View state
-    const [activeTab, setActiveTab] = useState<'editor' | 'chat' | 'recordings'>('editor');
+    const [activeTab, setActiveTab] = useState<'editor' | 'chat' | 'recordings' | 'history'>('editor');
     
     // Companion and chat state
     const [companion, setCompanion] = useState<Companion>(companions[0]);
@@ -57,11 +60,27 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     // Audio clips state
     const [audioClips, setAudioClips] = useState<AudioClip[]>([]);
     
+    // Version history state
+    const [versions, setVersions] = useState<ProjectVersion[]>([]);
+    const [isVersionsLoading, setIsVersionsLoading] = useState(false);
+    
+    // Save error state
+    const [saveError, setSaveError] = useState<string | null>(null);
+    
     // Rhyme finder state
     const [rhymeState, setRhymeState] = useState({ isOpen: false, word: '', rhymes: [], isLoading: false, error: null as string | null });
     const [musicianModal, setMusicianModal] = useState({ isOpen: false, name: '', customName: '', type: 'artist' as 'artist' | 'genre' });
     const [selectedMusician, setSelectedMusician] = useState<string>('');
     const [selectedStyleType, setSelectedStyleType] = useState<'artist' | 'genre'>('artist');
+
+    // Refs to track state for comparison and initial load
+    const stateRef = useRef({ projectTitle, lyrics, suggestion, feedback, companion, messages, audioClips, activeTab });
+    const lastSavedDataRef = useRef<string>('');
+
+    // Update stateRef whenever state changes
+    useEffect(() => {
+        stateRef.current = { projectTitle, lyrics, suggestion, feedback, companion, messages, audioClips, activeTab };
+    }, [projectTitle, lyrics, suggestion, feedback, companion, messages, audioClips, activeTab]);
 
     // Load saved data for specific project from Firestore
     useEffect(() => {
@@ -75,15 +94,57 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data) {
-                        setProjectTitle(typeof data.title === 'string' ? data.title : 'Untitled Song');
-                        setLyrics(typeof data.lyrics === 'string' ? data.lyrics : '');
-                        setSuggestion(typeof data.suggestion === 'string' ? data.suggestion : '');
-                        setFeedback(typeof data.feedback === 'string' ? data.feedback : '');
-                        setCompanion(data.companion || companions[0]);
-                        setMessages(Array.isArray(data.messages) ? data.messages : [{ sender: 'greeting', content: (data.companion || companions[0]).greeting }]);
-                        setAudioClips(Array.isArray(data.audioClips) ? data.audioClips : []);
-                        setActiveTab((data.activeTab === 'editor' || data.activeTab === 'chat' || data.activeTab === 'recordings') ? data.activeTab : 'editor');
-                        setIsLoaded(true);
+                        // Only update state if it's different from our current state to avoid loops
+                        // and unnecessary re-renders
+                        
+                        if (data.title !== undefined && data.title !== stateRef.current.projectTitle) {
+                            setProjectTitle(data.title);
+                        }
+                        
+                        if (data.lyrics !== undefined && data.lyrics !== stateRef.current.lyrics) {
+                            setLyrics(data.lyrics);
+                        }
+                        
+                        if (data.suggestion !== undefined && data.suggestion !== stateRef.current.suggestion) {
+                            setSuggestion(data.suggestion);
+                        }
+                        
+                        if (data.feedback !== undefined && data.feedback !== stateRef.current.feedback) {
+                            setFeedback(data.feedback);
+                        }
+                        
+                        if (data.companion && JSON.stringify(data.companion) !== JSON.stringify(stateRef.current.companion)) {
+                            setCompanion(data.companion);
+                        }
+                        
+                        if (data.messages && JSON.stringify(data.messages) !== JSON.stringify(stateRef.current.messages)) {
+                            setMessages(data.messages);
+                        } else if (!data.messages && stateRef.current.messages.length === 0) {
+                             setMessages([{ sender: 'greeting', content: (data.companion || companions[0]).greeting }]);
+                        }
+                        
+                        if (data.audioClips && JSON.stringify(data.audioClips) !== JSON.stringify(stateRef.current.audioClips)) {
+                            setAudioClips(data.audioClips);
+                        }
+                        
+                        if (data.activeTab !== undefined && data.activeTab !== stateRef.current.activeTab) {
+                            setActiveTab(data.activeTab);
+                        }
+
+                        if (!isLoaded) {
+                            // On initial load, set the lastSavedDataRef
+                            lastSavedDataRef.current = JSON.stringify({
+                                projectTitle: data.title || 'Untitled Song',
+                                lyrics: data.lyrics || '',
+                                suggestion: data.suggestion || '',
+                                feedback: data.feedback || '',
+                                companion: data.companion || companions[0],
+                                messages: data.messages || [{ sender: 'greeting', content: (data.companion || companions[0]).greeting }],
+                                audioClips: data.audioClips || [],
+                                activeTab: data.activeTab || 'lyrics'
+                            });
+                            setIsLoaded(true);
+                        }
                     }
                 }
             } catch (err) {
@@ -97,11 +158,35 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     }, [projectId]);
 
     // Save data to Firestore for specific project
-    const saveData = useCallback(async () => {
+    const saveData = useCallback(async (isManualSave: boolean = false) => {
         if (!isLoaded || !auth.currentUser) return;
         setIsSaving(true);
         const path = `users/${auth.currentUser.uid}/projects/${projectId}`;
         try {
+            // Check for base64 audio clips and upload them to Firebase Storage to avoid 1MB Firestore limit
+            let updatedClips = [...audioClips];
+            let clipsChanged = false;
+            
+            for (let i = 0; i < updatedClips.length; i++) {
+                const clip = updatedClips[i];
+                if (storage && clip.audioData && clip.audioData.startsWith('data:')) {
+                    try {
+                        const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clip.id}`);
+                        await uploadString(storageRef, clip.audioData, 'data_url');
+                        const downloadURL = await getDownloadURL(storageRef);
+                        updatedClips[i] = { ...clip, audioData: downloadURL };
+                        clipsChanged = true;
+                    } catch (uploadError) {
+                        console.error("Failed to upload audio clip to storage:", uploadError);
+                        // If storage fails, we might still hit the 1MB limit, but we tried.
+                    }
+                }
+            }
+            
+            if (clipsChanged) {
+                setAudioClips(updatedClips);
+            }
+
             const projectRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId);
             await updateDoc(projectRef, {
                 title: projectTitle,
@@ -110,11 +195,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                 feedback,
                 companion,
                 messages,
-                audioClips,
+                audioClips: updatedClips,
                 activeTab,
                 lastModified: Date.now()
             });
-        } catch (error) {
+
+            if (isManualSave) {
+                // Create a version snapshot on manual save
+                const versionRef = collection(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions');
+                await addDoc(versionRef, {
+                    timestamp: Date.now(),
+                    lyrics,
+                    suggestion,
+                    feedback,
+                    audioClips: updatedClips
+                });
+            }
+            setSaveError(null); // Clear any previous errors on success
+        } catch (error: any) {
+            console.error("Save failed:", error);
+            if (error.message?.includes('exceeds the maximum allowed size') || String(error).includes('exceeds the maximum allowed size')) {
+                setSaveError("Save failed: Audio recordings are too large. Please enable Firebase Storage in your Firebase Console to save audio files.");
+            } else {
+                setSaveError("Failed to save project changes.");
+            }
             handleFirestoreError(error, OperationType.UPDATE, path);
         } finally {
             setTimeout(() => setIsSaving(false), 1000);
@@ -129,8 +233,53 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
         return () => clearTimeout(timer);
     }, [saveData]);
 
-    const handleBack = () => {
-        saveData();
+    // Load versions when history tab is active
+    useEffect(() => {
+        if (activeTab !== 'history' || !auth.currentUser) return;
+        
+        setIsVersionsLoading(true);
+        const versionsRef = collection(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions');
+        const q = query(versionsRef, orderBy('timestamp', 'desc'));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const newVersions = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as ProjectVersion[];
+            setVersions(newVersions);
+            setIsVersionsLoading(false);
+        }, (error) => {
+            console.error("Error loading versions:", error);
+            setIsVersionsLoading(false);
+        });
+        
+        return () => unsubscribe();
+    }, [activeTab, projectId]);
+
+    const handleRestoreVersion = (version: ProjectVersion) => {
+        if (window.confirm("Are you sure you want to restore this version? Your current unsaved changes will be replaced.")) {
+            setLyrics(version.lyrics);
+            setSuggestion(version.suggestion || '');
+            setFeedback(version.feedback || '');
+            setAudioClips(version.audioClips || []);
+            setActiveTab('editor');
+        }
+    };
+
+    const handleDeleteVersion = async (versionId: string) => {
+        if (!auth.currentUser) return;
+        if (window.confirm("Are you sure you want to delete this version?")) {
+            try {
+                const versionRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions', versionId);
+                await deleteDoc(versionRef);
+            } catch (error) {
+                console.error("Error deleting version:", error);
+            }
+        }
+    };
+
+    const handleBack = async () => {
+        await saveData(true);
         onBack();
     };
 
@@ -219,11 +368,24 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             }
 
             if (audioBase64) {
+                const clipId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString();
+                let audioDataUrl = `data:${mimeType};base64,${audioBase64}`;
+                
+                if (storage) {
+                    try {
+                        const storageRef = ref(storage, `users/${auth.currentUser?.uid}/projects/${projectId}/audio/${clipId}`);
+                        await uploadString(storageRef, audioDataUrl, 'data_url');
+                        audioDataUrl = await getDownloadURL(storageRef);
+                    } catch (uploadError) {
+                        console.error("Failed to upload AI song to storage, falling back to base64:", uploadError);
+                    }
+                }
+
                 const newClip: AudioClip = {
-                    id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(),
+                    id: clipId,
                     name: `AI Song - ${projectTitle}`,
                     timestamp: Date.now(),
-                    audioData: `data:${mimeType};base64,${audioBase64}`,
+                    audioData: audioDataUrl,
                 };
                 setAudioClips(prev => [newClip, ...prev]);
                 setSuggestion('AI Song generated successfully! You can find it in the Recordings tab.');
@@ -350,18 +512,47 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     };
 
     const handleRecordingComplete = async (blob: Blob) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-            const base64data = reader.result as string;
+        if (!auth.currentUser) return;
+        
+        try {
+            const clipId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString();
+            let downloadURL = "";
+            
+            if (storage) {
+                const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clipId}`);
+                await uploadBytes(storageRef, blob);
+                downloadURL = await getDownloadURL(storageRef);
+            } else {
+                downloadURL = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => resolve(reader.result as string);
+                });
+            }
+            
             const newClip: AudioClip = {
-                id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(),
+                id: clipId,
                 name: `Recording ${audioClips.length + 1}`,
                 timestamp: Date.now(),
-                audioData: base64data,
+                audioData: downloadURL,
             };
             setAudioClips(prev => [newClip, ...prev]);
-        };
+        } catch (error) {
+            console.error("Error uploading recording:", error);
+            // Fallback to base64 if storage fails (though it might hit the 1MB limit)
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                const base64data = reader.result as string;
+                const newClip: AudioClip = {
+                    id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(),
+                    name: `Recording ${audioClips.length + 1}`,
+                    timestamp: Date.now(),
+                    audioData: base64data,
+                };
+                setAudioClips(prev => [newClip, ...prev]);
+            };
+        }
     };
 
     const handleDeleteClip = (id: string) => {
@@ -377,7 +568,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                             value={lyrics} 
                             onChange={(e) => setLyrics(e.target.value)}
                             onTranscriptUpdate={handleTranscriptUpdate}
-                            onSave={saveData}
+                            onSave={() => saveData(true)}
                             isSaving={isSaving}
                         />
                         <SuggestionControls 
@@ -417,6 +608,15 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                             <AudioClipList clips={audioClips} onDelete={handleDeleteClip} />
                         </div>
                     </div>
+                );
+            case 'history':
+                return (
+                    <VersionHistory 
+                        versions={versions}
+                        onRestore={handleRestoreVersion}
+                        onDelete={handleDeleteVersion}
+                        isLoading={isVersionsLoading}
+                    />
                 );
             default:
                 return null;
@@ -538,6 +738,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             )}
             
             <header className="flex flex-col gap-4">
+                {saveError && (
+                    <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl flex items-center justify-between">
+                        <span className="text-sm font-medium">{saveError}</span>
+                        <button onClick={() => setSaveError(null)} className="text-red-300 hover:text-white ml-4">✕</button>
+                    </div>
+                )}
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                          <button onClick={handleBack} className="p-2 rounded-full hover:bg-white/10 transition-colors flex-shrink-0" aria-label="Go back">
@@ -550,6 +756,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                             className="bg-transparent text-xl md:text-2xl font-bold text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded px-2 w-full transition-all"
                         />
                     </div>
+                    {auth.currentUser?.isAnonymous && (
+                        <div className="px-3 py-1 bg-pink-500/20 border border-pink-500/30 rounded-full flex items-center gap-2 flex-shrink-0">
+                            <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider">Guest Mode</span>
+                        </div>
+                    )}
                 </div>
                 
                 <div className="flex justify-center">
@@ -557,6 +769,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                         <TabButton icon={<PencilIcon className="w-5 h-5"/>} text="Editor" isActive={activeTab === 'editor'} onClick={() => setActiveTab('editor')} />
                         <TabButton icon={<ChatBubbleIcon className="w-5 h-5"/>} text="Chat" isActive={activeTab === 'chat'} onClick={() => setActiveTab('chat')} />
                         <TabButton icon={<RecordIcon className="w-5 h-5"/>} text="Recordings" isActive={activeTab === 'recordings'} onClick={() => setActiveTab('recordings')} />
+                        <TabButton icon={<HistoryIcon className="w-5 h-5"/>} text="History" isActive={activeTab === 'history'} onClick={() => setActiveTab('history')} />
                     </div>
                 </div>
             </header>

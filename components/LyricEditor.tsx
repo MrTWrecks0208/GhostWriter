@@ -2,6 +2,10 @@ import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } f
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
 import { StopIcon } from './icons/StopIcon';
 import { SaveIcon } from './icons/SaveIcon';
+import { Loader2, ChevronRight } from 'lucide-react';
+import { recognizeHandwriting } from '../services/geminiService';
+import { motion, AnimatePresence } from 'motion/react';
+import { Camera } from './icons/CameraIcon';
 
 // Add type definitions for the non-standard SpeechRecognition API
 declare global {
@@ -17,7 +21,7 @@ const isSpeechRecognitionSupported = !!SpeechRecognition;
 
 interface LyricEditorProps {
   value: string;
-  onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange: (event: React.ChangeEvent<HTMLTextAreaElement> | { target: { value: string, id: string } }) => void;
   onTranscriptUpdate: (transcript: string) => void;
   onSave: () => void;
   isSaving?: boolean;
@@ -30,14 +34,87 @@ export interface LyricEditorHandles {
 
 const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, onChange, onTranscriptUpdate, onSave, isSaving }, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const recognitionRef = useRef<any>(null);
+  
+  const tutorialSlides = [
+    {
+      title: "Snap a Photo",
+      description: "Use your camera to take a clear, well-lit picture of your handwritten lyrics.",
+      icon: <Camera className="w-12 h-12 text-accent animate-pulse" />
+    },
+    {
+      title: "AI Analysis",
+      description: "Our advanced AI deciphers your handwriting and converts it into digital text in seconds.",
+      icon: <Loader2 className="w-12 h-12 text-accent animate-spin" />
+    },
+    {
+      title: "Instant Digitization",
+      description: "Your lyrics will appear right here in the editor, ready for you to refine and enhance.",
+      icon: <SaveIcon className="w-12 h-12 text-accent animate-bounce" />
+    }
+  ];
+
+  const handleImportClick = () => {
+    const hasSeenTutorial = localStorage.getItem('hasSeenImportTutorial');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+      setCurrentSlide(0);
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const completeTutorial = () => {
+    localStorage.setItem('hasSeenImportTutorial', 'true');
+    setShowTutorial(false);
+    fileInputRef.current?.click();
+  };
   
   useImperativeHandle(ref, () => ({
     toggleRecording,
     textareaRef,
   }));
+
+  const handleImportLyrics = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsOcrLoading(true);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+      });
+      reader.readAsDataURL(file);
+      const base64Image = await base64Promise;
+
+      const digitizedLyrics = await recognizeHandwriting(base64Image, file.type);
+
+      if (!digitizedLyrics.trim()) {
+        alert("Could not find any lyrics in the image. Please try a clearer picture.");
+        return;
+      }
+
+      // Update lyrics in the editor
+      onChange({ target: { value: digitizedLyrics, id: 'lyrics' } });
+      
+    } catch (error) {
+      console.error("Error importing lyrics:", error);
+      alert(error instanceof Error ? error.message : "Failed to import lyrics.");
+    } finally {
+      setIsOcrLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (!isSpeechRecognitionSupported) {
@@ -130,21 +207,43 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
             <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-gray-300">Lyrics</h2>
                 {isSaving && (
-                    <span className="text-xs text-purple-400 animate-pulse font-medium">Autosaving...</span>
+                    <span className="text-xs text-accent-light animate-pulse font-medium">Autosaving...</span>
                 )}
             </div>
-            <button 
-                onClick={handleSaveClick}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
-                    justSaved 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-white/10 hover:bg-white/20 text-gray-300'
-                }`}
-                disabled={justSaved || isSaving}
-            >
-                <SaveIcon className="w-4 h-4" />
-                {justSaved ? 'Saved!' : 'Save Song'}
-            </button>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={handleImportClick}
+                    disabled={isOcrLoading}
+                    className="group flex items-center gap-2 active:bg-pink-600 px-4 py-2 rounded-md text-sm font-semibold bg-white/10 hover:bg-white/20 text-gray-300 transition-all duration-300 disabled:opacity-50"
+                    title="Import handwritten lyrics"
+                >
+                    {isOcrLoading ? (
+                        <Loader2 className="w-5 h-5 group-hover:animate-spin" />
+                    ) : (
+                        <Camera className="w-5 h-5 group-hover:animate-pulse active:text-white" />
+                    )}
+                    {isOcrLoading ? 'Importing...' : 'Import'}
+                </button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImportLyrics}
+                    accept="image/*"
+                    className="hidden"
+                />
+                <button 
+                    onClick={handleSaveClick}
+                    className={`group flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
+                        justSaved 
+                            ? 'bg-emerald-600 text-white' 
+                            : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                    }`}
+                    disabled={justSaved || isSaving}
+                >
+                    <SaveIcon className="w-5 h-5 active:text-white group-hover:text-emerald-500 active:text-emerald-600 group-hover:animate-bounce" />
+                    {justSaved ? 'Saved!' : 'Save'}
+                </button>
+            </div>
        </div>
       <div className="relative flex-grow p-4 pt-2">
           <textarea
@@ -153,7 +252,7 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
             value={value}
             onChange={onChange}
             placeholder="Start writing your lyrics or use the dictate button..."
-            className={`${commonClasses} text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 pl-2 caret-purple-400 relative z-10 p-0`}
+            className={`${commonClasses} text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent pl-2 caret-accent-light relative z-10 p-0`}
             spellCheck="true"
           />
           {isSpeechRecognitionSupported && (
@@ -185,6 +284,113 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
             </div>
           )}
       </div>
+
+      {/* Onboarding Tutorial Modal */}
+      <AnimatePresence>
+        {showTutorial && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-main border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+            >
+              <div className="p-8 flex flex-col items-center text-center">
+                <div className="mb-8 p-6 bg-white/5 rounded-2xl">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentSlide}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {tutorialSlides[currentSlide].icon}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="min-h-[120px]"
+                  >
+                    <h3 className="text-2xl font-bold text-white mb-3">
+                      {tutorialSlides[currentSlide].title}
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      {tutorialSlides[currentSlide].description}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+
+                <div className="flex gap-2 mt-8 mb-8">
+                  {tutorialSlides.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        idx === currentSlide ? 'w-8 bg-accent' : 'w-2 bg-white/10'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex w-full gap-3">
+                  {currentSlide === 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowTutorial(false)}
+                        className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-xl transition-all"
+                      >
+                        Skip
+                      </button>
+                      <button
+                        onClick={() => setCurrentSlide(1)}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20"
+                      >
+                        Next
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+
+                  {currentSlide === 1 && (
+                    <button
+                      onClick={() => setCurrentSlide(2)}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20"
+                    >
+                      Next
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  )}
+
+                  {currentSlide === 2 && (
+                    <>
+                      <button
+                        onClick={() => setShowTutorial(false)}
+                        className="flex-1 px-6 py-3 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-xl transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={completeTutorial}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent text-white font-bold rounded-xl transition-all shadow-lg shadow-accent/20"
+                      >
+                        Next
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

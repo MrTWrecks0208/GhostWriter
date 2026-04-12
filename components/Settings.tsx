@@ -33,7 +33,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1d2951] text-white p-6">
+    <div className="min-h-screen bg-main text-white p-6">
       <div className="max-w-4xl mx-auto">
         <button 
           onClick={onBack}
@@ -43,7 +43,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
           Back to Projects
         </button>
 
-        <h1 className="text-4xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-pink-500">
+        <h1 className="text-4xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-br from-accent to-accent-light">
           Settings
         </h1>
 
@@ -54,7 +54,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeTab === 'profile' 
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' 
+                  ? 'bg-accent text-white shadow-lg shadow-accent/20' 
                   : 'text-gray-400 hover:bg-white/5 hover:text-white'
               }`}
             >
@@ -65,7 +65,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
               onClick={() => setActiveTab('billing')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 activeTab === 'billing' 
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' 
+                  ? 'bg-accent text-white shadow-lg shadow-accent/20' 
                   : 'text-gray-400 hover:bg-white/5 hover:text-white'
               }`}
             >
@@ -97,13 +97,13 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Enter your name"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20"
+                    className="flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-light disabled:bg-accent/50 rounded-xl font-bold transition-all shadow-lg shadow-accent/20"
                   >
                     <Save className="w-4 h-4" />
                     {isSaving ? 'Saving...' : 'Save Changes'}
@@ -129,7 +129,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
                   <p className="text-sm text-gray-400 mb-6">You are currently on the free plan. Upgrade to unlock premium features.</p>
                   <button
                     onClick={onGoToPricing}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20"
+                    className="w-full py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent rounded-xl font-bold transition-all shadow-lg shadow-accent/20"
                   >
                     View Pricing & Upgrade
                   </button>

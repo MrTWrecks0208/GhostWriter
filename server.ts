@@ -32,6 +32,13 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Add COOP and COEP headers for SharedArrayBuffer (required by ffmpeg.wasm)
+  app.use((req, res, next) => {
+    res.header("Cross-Origin-Opener-Policy", "same-origin");
+    res.header("Cross-Origin-Embedder-Policy", "require-corp");
+    next();
+  });
+
   // API Routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });

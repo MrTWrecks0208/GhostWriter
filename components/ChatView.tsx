@@ -120,10 +120,10 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, onSendMessage, isLoading,
             <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-3 ${
                   msg.sender === 'user'
-                    ? 'bg-[#1d2951] text-white rounded-br-none'
+                    ? 'bg-main text-white rounded-br-none'
                     : 'bg-gray-700 text-gray-200 rounded-bl-none'
               }`}>
-                 <div className="markdown-body prose prose-invert prose-p:text-gray-300 prose-p:mb-4 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-purple-400 prose-headings:to-pink-500 prose-li:text-gray-300">
+                 <div className="markdown-body prose prose-invert prose-p:text-gray-300 prose-p:mb-4 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-accent-light prose-headings:to-accent prose-li:text-gray-300">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               </div>
@@ -149,7 +149,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, onSendMessage, isLoading,
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={isRecording ? 'Listening...' : `Ask ${companionName} for ideas...`}
-            className="w-full bg-gray-900/50 border-2 border-gray-700 rounded-lg p-3 text-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 resize-none"
+            className="w-full bg-gray-900/50 border-2 border-gray-700 rounded-lg p-3 text-gray-200 focus:ring-2 focus:ring-accent focus:border-accent transition duration-200 resize-none"
             rows={1}
             disabled={isLoading}
           />
@@ -170,7 +170,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, onSendMessage, isLoading,
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="p-3 bg-[#1d2951] rounded-full text-white hover:bg-[#151e3d] disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="p-3 bg-main rounded-full text-white hover:bg-main-dark disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent"
             aria-label="Send message"
           >
             <PaperAirplaneIcon className="w-6 h-6"/>

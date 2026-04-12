@@ -12,6 +12,7 @@ export enum SuggestionType {
   STYLE_MIMIC = 'Write Like...',
   TIKTOK_HOOK = 'TikTok Hook Generator',
   GENERATE_SONG = 'Generate AI Song',
+  RADIO_READY = 'Make it Radio-Ready',
 }
 
 // FIX: Add ChatMessage type definition. This was missing, causing import errors.
@@ -53,4 +54,13 @@ export interface Project {
   messages: ChatMessage[];
   activeTab: 'editor' | 'chat';
   audioClips?: AudioClip[];
+}
+
+export interface ProjectVersion {
+  id: string;
+  timestamp: number;
+  lyrics: string;
+  suggestion: string;
+  feedback: string;
+  audioClips: AudioClip[];
 }

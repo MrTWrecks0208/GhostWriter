@@ -29,6 +29,19 @@
         "photoURL": { "type": "string" }
       },
       "required": ["uid", "email"]
+    },
+    "ProjectVersion": {
+      "title": "ProjectVersion",
+      "description": "A snapshot of a project",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "number" },
+        "lyrics": { "type": "string" },
+        "suggestion": { "type": "string" },
+        "feedback": { "type": "string" },
+        "audioClips": { "type": "array" }
+      },
+      "required": ["timestamp", "lyrics"]
     }
   },
   "firestore": {
@@ -39,6 +52,10 @@
     "/users/{userId}/projects/{projectId}": {
       "schema": "Project",
       "description": "User's songwriting projects"
+    },
+    "/users/{userId}/projects/{projectId}/versions/{versionId}": {
+      "schema": "ProjectVersion",
+      "description": "Project version snapshots"
     }
   }
 }

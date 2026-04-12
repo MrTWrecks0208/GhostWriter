@@ -36,6 +36,8 @@ class ErrorBoundary extends React.Component<Props, State> {
           const parsedError = JSON.parse((this as any).state.error.message);
           if (parsedError.error && parsedError.error.includes('insufficient permissions')) {
             errorMessage = "You don't have permission to perform this action. Please make sure you are signed in correctly.";
+          } else if (parsedError.error && (parsedError.error.includes('Quota exceeded') || parsedError.error.includes('resource-exhausted'))) {
+            errorMessage = "The application has reached its free tier limit for today. The quota will reset tomorrow. Please try again then.";
           }
         }
       } catch (e) {
@@ -49,7 +51,7 @@ class ErrorBoundary extends React.Component<Props, State> {
             <p className="text-gray-400 mb-8">{errorMessage}</p>
             <button
               onClick={() => window.location.reload()}
-              className="w-full p-4 bg-[#1d2951] text-white rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full p-4 bg-main text-white rounded-xl font-bold shadow-lg shadow-accent/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Refresh Page
             </button>

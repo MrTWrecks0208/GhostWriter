@@ -11,8 +11,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@google/genai": "^1.29.0",
     "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "firebase": "^12.11.0",
@@ -25,10 +29,12 @@
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.2.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

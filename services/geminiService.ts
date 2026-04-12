@@ -1,11 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { SuggestionType, AiSuggestionResult } from '../types';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
+if (!process.env.GEMINI_API_KEY) {
+  console.warn("GEMINI_API_KEY environment variable is not set. General suggestions may fail.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 const BASE_SYSTEM_INSTRUCTION = `You are a world-class songwriting partner. Your goal is to help the user refine and enhance their existing lyrics, NOT to replace them with a new song.
 
@@ -161,6 +161,23 @@ Task:
 
 Use Google Search to verify these lyrics against existing song databases.`;
       break;
+    case SuggestionType.RADIO_READY:
+      prompt = `I want to put the final "radio-ready" polish on these lyrics. 
+      
+Current Lyrics:
+---
+${lyrics}
+---
+
+Task:
+1. Provide a final, high-level critique of the song's commercial potential and "radio-readiness".
+2. Suggest 3-5 specific, sophisticated improvements to word choice, phrasing, or rhythmic flow that would elevate the song to a professional, radio-ready standard.
+3. Focus on making the hook more memorable, the verses more engaging, and the overall narrative more impactful.
+4. Suggest a specific "production style" or "sonic palette" that would complement these lyrics for a modern radio hit (e.g., "clean pop production with synth-driven hooks" or "raw, acoustic-driven indie folk with layered harmonies").
+5. DO NOT rewrite the whole song. Provide surgical, high-impact suggestions.
+
+Format your response with clear headings and bullet points.`;
+      break;
     default:
       prompt = lyrics;
   }
@@ -223,3 +240,26 @@ export const getRhymes = async (word: string): Promise<string[]> => {
         throw new Error("Could not fetch rhymes from the AI.");
     }
 }
+
+export const recognizeHandwriting = async (base64Image: string, mimeType: string): Promise<string> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: [
+                {
+                    inlineData: {
+                        data: base64Image,
+                        mimeType: mimeType,
+                    },
+                },
+                {
+                    text: "Please decipher the handwriting in this image and provide the digitized lyrics. Only return the lyrics themselves, with no additional commentary.",
+                },
+            ],
+        });
+        return response.text || "";
+    } catch (error) {
+        console.error("Error recognizing handwriting:", error);
+        throw new Error("Failed to decipher handwriting. Please ensure the image is clear.");
+    }
+};

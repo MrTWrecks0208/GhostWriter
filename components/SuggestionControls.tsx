@@ -9,7 +9,7 @@ import { ChordsIcon } from './icons/ChordsIcon';
 import { RhymeIcon } from './icons/RhymeIcon';
 import { ReviewIcon } from './icons/ReviewIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
-import { User as UserIcon, Video as VideoIcon, Music as MusicIcon } from 'lucide-react';
+import { User as UserIcon, Video as VideoIcon, Music as MusicIcon, Radio as RadioIcon } from 'lucide-react';
 
 interface SuggestionControlsProps {
   onSuggestionSelect: (type: SuggestionType) => void;
@@ -28,6 +28,7 @@ const suggestionOptions = [
   { type: SuggestionType.STYLE_MIMIC, icon: <UserIcon className="w-5 h-5" /> },
   { type: SuggestionType.TIKTOK_HOOK, icon: <VideoIcon className="w-5 h-5" /> },
   { type: SuggestionType.GENERATE_SONG, icon: <MusicIcon className="w-5 h-5" /> },
+  { type: SuggestionType.RADIO_READY, icon: <RadioIcon className="w-5 h-5" /> },
 ];
 
 const SuggestionButton = ({ type, icon, onClick, disabled, isActive = false }: {
@@ -43,7 +44,7 @@ const SuggestionButton = ({ type, icon, onClick, disabled, isActive = false }: {
     disabled={disabled}
     className={`w-full text-left px-4 py-3 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold flex items-center gap-3 shadow-md ${
       isActive
-        ? 'bg-gradient-to-br from-purple-500 to-pink-500 hover:filter-brightness-125'
+        ? 'bg-gradient-to-br from-accent to-accent-light hover:filter-brightness-125'
         : 'bg-white/10 hover:bg-white/20'
     }`}
   >
@@ -56,7 +57,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({ onSuggestionSel
   return (
     <div className="bg-white/5 rounded-xl p-4 shadow-lg">
         <h2 className="text-xl font-bold text-gray-300 mb-4 flex items-center gap-2">
-            <SparkleIcon className="w-6 h-6 text-purple-400"/>
+            <SparkleIcon className="w-6 h-6 text-accent-light"/>
             AI Suggestions
         </h2>
         <div className="grid grid-cols-2 gap-3">

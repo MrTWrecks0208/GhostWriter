@@ -1,6 +1,7 @@
 import React from 'react';
 import { AudioClip } from '../types';
 import { TrashIcon } from './icons/TrashIcon';
+import { AudioExportButton } from './AudioExportButton';
 
 interface AudioClipListProps {
   clips: AudioClip[];
@@ -37,13 +38,16 @@ const AudioClipList: React.FC<AudioClipListProps> = ({ clips, onDelete }) => {
               <span className="text-sm font-semibold text-gray-200">{clip.name}</span>
               <span className="text-[10px] text-gray-500">{formatDate(clip.timestamp)}</span>
             </div>
-            <button
-              onClick={() => onDelete(clip.id)}
-              className="p-2 text-gray-500 hover:text-red-400 transition-colors"
-              aria-label="Delete recording"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <AudioExportButton audioData={clip.audioData} fileName={clip.name} />
+              <button
+                onClick={() => onDelete(clip.id)}
+                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                aria-label="Delete recording"
+              >
+                <TrashIcon className="w-6 h-6" />
+              </button>
+            </div>
           </div>
           
           <audio 
