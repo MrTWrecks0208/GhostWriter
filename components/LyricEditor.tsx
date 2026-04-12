@@ -46,7 +46,7 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
     {
       title: "Snap a Photo",
       description: "Use your camera to take a clear, well-lit picture of your handwritten lyrics.",
-      icon: <Camera className="w-12 h-12 text-accent animate-pulse" />
+      icon: <Camera className="w-12 h-12 text-pink-600 animate-pulse" />
     },
     {
       title: "AI Analysis",
@@ -56,7 +56,7 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
     {
       title: "Instant Digitization",
       description: "Your lyrics will appear right here in the editor, ready for you to refine and enhance.",
-      icon: <SaveIcon className="w-12 h-12 text-accent animate-bounce" />
+      icon: <SaveIcon className="w-12 h-12 text-emerald-500 animate-bounce" />
     }
   ];
 
@@ -214,13 +214,13 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
                 <button
                     onClick={handleImportClick}
                     disabled={isOcrLoading}
-                    className="group flex items-center gap-2 active:bg-pink-600 px-4 py-2 rounded-md text-sm font-semibold bg-white/10 hover:bg-white/20 text-gray-300 transition-all duration-300 disabled:opacity-50"
+                    className="group flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-white/10 hover:border-1 hover:border-pink-500 group-active:bg-pink-500 text-white transition-all duration-300 disabled:opacity-50"
                     title="Import handwritten lyrics"
                 >
                     {isOcrLoading ? (
                         <Loader2 className="w-5 h-5 group-hover:animate-spin" />
                     ) : (
-                        <Camera className="w-5 h-5 group-hover:animate-pulse active:text-white" />
+                        <Camera className="w-5 h-5 group-hover:animate-pulse" />
                     )}
                     {isOcrLoading ? 'Importing...' : 'Import'}
                 </button>
@@ -233,14 +233,14 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
                 />
                 <button 
                     onClick={handleSaveClick}
-                    className={`group flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
+                    className={`group flex items-center hover:border-1 hover:border-emerald-500 active:bg-emerald-500 active:text-white gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
                         justSaved 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-white/10 hover:bg-white/20 text-gray-300'
+                            ? 'bg-emerald-500 text-white' 
+                            : 'bg-white/10'
                     }`}
                     disabled={justSaved || isSaving}
                 >
-                    <SaveIcon className="w-5 h-5 active:text-white group-hover:text-emerald-500 active:text-emerald-600 group-hover:animate-bounce" />
+                    <SaveIcon className="w-5 h-5 active:text-white text-emerald-500 hover:animate-bounce" />
                     {justSaved ? 'Saved!' : 'Save'}
                 </button>
             </div>

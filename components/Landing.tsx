@@ -88,9 +88,11 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
     } catch (err: any) {
       console.error('Google Auth error:', err);
       if (err.code === 'auth/popup-closed-by-user') {
-        setError('The sign-in popup was closed. If you are using the preview, try opening the app in a new tab using the button in the top right.');
+        setError('Popup blocked or closed. In this preview environment, Google Sign-In requires opening the app in a new tab.');
       } else if (err.code === 'auth/cancelled-popup-request') {
         setError('Sign-in was cancelled. Please try again.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized for Google Sign-In. Please add it in the Firebase Console.');
       } else {
         setError(err.message || 'An unexpected error occurred during Google sign-in.');
       }
@@ -119,8 +121,8 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
       });
     } catch (err: any) {
       console.error('Guest Login error:', err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setError('Guest login (Anonymous Auth) is not enabled in Firebase. Please enable it in the Firebase Console.');
+      if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/admin-restricted-operation') {
+        setError('Guest login is disabled. Please go to your Firebase Console -> Authentication -> Sign-in method, and enable the "Anonymous" provider.');
       } else {
         setError(err.message || 'An unexpected error occurred during guest login.');
       }
@@ -171,9 +173,18 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
                       />
                       
                       {error && (
-                        <p className="text-red-400 text-sm bg-red-400/10 p-3 rounded-lg border border-red-400/20">
-                          {error}
-                        </p>
+                        <div className="text-red-400 text-sm bg-red-400/10 p-4 rounded-xl border border-red-400/20 flex flex-col gap-2 text-left">
+                          <p>{error}</p>
+                          {error.includes('opening the app in a new tab') && (
+                            <button 
+                              type="button"
+                              onClick={() => window.open(window.location.href, '_blank')}
+                              className="mt-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 py-2 px-4 rounded-lg font-semibold transition-colors w-full"
+                            >
+                              Open in New Tab
+                            </button>
+                          )}
+                        </div>
                       )}
 
                       <button

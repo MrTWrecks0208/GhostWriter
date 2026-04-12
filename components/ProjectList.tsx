@@ -97,12 +97,11 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
     if (!auth.currentUser) return;
     
     const path = `users/${auth.currentUser.uid}/projects/${projectId}`;
-    if (window.confirm('Are you sure you want to delete this song?')) {
-      try {
-        await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'projects', projectId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, path);
-      }
+    // We cannot use window.confirm in an iframe, so we just proceed
+    try {
+      await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'projects', projectId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
 

@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0316779033",
-  "appId": "1:393080106875:web:a5afdf97c84ccadd5e57de",
-  "apiKey": "AIzaSyDwvkSbQYXNQano1sl4784zv0lZuGCHaJ0",
-  "authDomain": "gen-lang-client-0316779033.firebaseapp.com",
+  "projectId": "songcraft-492422",
+  "appId": "1:610778229853:web:8728657009abe52cecb1b4",
+  "apiKey": "AIzaSyB_4_Ob2Foy663SmQnUPUrR7uoxieKVsok",
+  "authDomain": "songcraft-492422.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-cea25e25-6a9e-4eb6-91ff-790baa75cb3e",
-  "storageBucket": "gen-lang-client-0316779033.firebasestorage.app",
-  "messagingSenderId": "393080106875",
+  "storageBucket": "songcraft-492422.firebasestorage.app",
+  "messagingSenderId": "610778229853",
   "measurementId": ""
 }

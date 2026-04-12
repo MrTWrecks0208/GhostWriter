@@ -4,7 +4,7 @@ import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage
 import { db, auth, storage } from '../firebase';
 import { SuggestionType, Companion, ChatMessage, Project, AudioClip, ProjectVersion } from '../types';
 import { getAiSuggestion, getRhymes } from '../services/geminiService';
-import { GoogleGenAI, Chat, Modality } from "@google/genai";
+import { GoogleGenAI, Chat } from "@google/genai";
 import { motion } from 'motion/react';
 import LyricEditor from './LyricEditor';
 import SuggestionControls from './SuggestionControls';
@@ -30,6 +30,8 @@ interface WorkspaceProps {
     projectId: string;
     onBack: () => void;
 }
+
+let isStorageAvailable = true;
 
 const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     // Project Metadata
@@ -127,9 +129,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                             setAudioClips(data.audioClips);
                         }
                         
-                        if (data.activeTab !== undefined && data.activeTab !== stateRef.current.activeTab) {
-                            setActiveTab(data.activeTab);
-                        }
+                        // We intentionally do not load activeTab from the database 
+                        // so that opening a project always defaults to the 'editor' tab.
 
                         if (!isLoaded) {
                             // On initial load, set the lastSavedDataRef
@@ -169,15 +170,20 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             
             for (let i = 0; i < updatedClips.length; i++) {
                 const clip = updatedClips[i];
-                if (storage && clip.audioData && clip.audioData.startsWith('data:')) {
+                if (isStorageAvailable && storage && clip.audioData && clip.audioData.startsWith('data:')) {
                     try {
                         const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clip.id}`);
                         await uploadString(storageRef, clip.audioData, 'data_url');
                         const downloadURL = await getDownloadURL(storageRef);
                         updatedClips[i] = { ...clip, audioData: downloadURL };
                         clipsChanged = true;
-                    } catch (uploadError) {
-                        console.error("Failed to upload audio clip to storage:", uploadError);
+                    } catch (uploadError: any) {
+                        if (uploadError?.code === 'storage/retry-limit-exceeded' || uploadError?.message?.includes('retry-limit-exceeded')) {
+                            console.warn("Firebase Storage not configured or unreachable. Keeping base64 format.");
+                            isStorageAvailable = false;
+                        } else {
+                            console.error("Failed to upload audio clip to storage:", uploadError);
+                        }
                         // If storage fails, we might still hit the 1MB limit, but we tried.
                     }
                 }
@@ -189,7 +195,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
 
             const projectRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId);
             await updateDoc(projectRef, {
-                title: projectTitle,
+                title: projectTitle || 'Untitled Song',
                 lyrics,
                 suggestion,
                 feedback,
@@ -225,13 +231,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
         }
     }, [isLoaded, projectId, projectTitle, lyrics, suggestion, feedback, companion, messages, audioClips, activeTab]);
 
-    // Auto-save on changes (debounced - 5 seconds pause)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            saveData();
-        }, 5000);
-        return () => clearTimeout(timer);
-    }, [saveData]);
+    // Auto-save feature has been removed as per user request.
 
     // Load versions when history tab is active
     useEffect(() => {
@@ -257,29 +257,26 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
     }, [activeTab, projectId]);
 
     const handleRestoreVersion = (version: ProjectVersion) => {
-        if (window.confirm("Are you sure you want to restore this version? Your current unsaved changes will be replaced.")) {
-            setLyrics(version.lyrics);
-            setSuggestion(version.suggestion || '');
-            setFeedback(version.feedback || '');
-            setAudioClips(version.audioClips || []);
-            setActiveTab('editor');
-        }
+        // We cannot use window.confirm in an iframe, so we just proceed
+        setLyrics(version.lyrics);
+        setSuggestion(version.suggestion || '');
+        setFeedback(version.feedback || '');
+        setAudioClips(version.audioClips || []);
+        setActiveTab('editor');
     };
 
     const handleDeleteVersion = async (versionId: string) => {
         if (!auth.currentUser) return;
-        if (window.confirm("Are you sure you want to delete this version?")) {
-            try {
-                const versionRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions', versionId);
-                await deleteDoc(versionRef);
-            } catch (error) {
-                console.error("Error deleting version:", error);
-            }
+        // We cannot use window.confirm in an iframe, so we just proceed
+        try {
+            const versionRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions', versionId);
+            await deleteDoc(versionRef);
+        } catch (error) {
+            console.error("Error deleting version:", error);
         }
     };
 
-    const handleBack = async () => {
-        await saveData(true);
+    const handleBack = () => {
         onBack();
     };
 
@@ -322,18 +319,23 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             return;
         }
 
-        // Check for API key selection for Lyria
-        if (typeof (window as any).aistudio !== 'undefined') {
-            const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-            if (!hasKey) {
-                await (window as any).aistudio.openSelectKey();
-                // Proceed after key selection
-            }
-        }
-
         setIsSongGenerating(true);
         setSuggestionError(null);
+        setSuggestion('');
         setActiveSuggestionType(SuggestionType.GENERATE_SONG);
+
+        // Check for API key selection for Lyria
+        if (typeof (window as any).aistudio !== 'undefined') {
+            try {
+                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                if (!hasKey) {
+                    await (window as any).aistudio.openSelectKey();
+                    // Proceed after key selection
+                }
+            } catch (e) {
+                console.error("Error checking/requesting API key:", e);
+            }
+        }
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -347,7 +349,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                 model: "lyria-3-clip-preview",
                 contents: prompt,
                 config: {
-                    responseModalities: [Modality.AUDIO],
+                    responseModalities: ["AUDIO"],
                 }
             });
 
@@ -371,13 +373,18 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                 const clipId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString();
                 let audioDataUrl = `data:${mimeType};base64,${audioBase64}`;
                 
-                if (storage) {
+                if (isStorageAvailable && storage) {
                     try {
                         const storageRef = ref(storage, `users/${auth.currentUser?.uid}/projects/${projectId}/audio/${clipId}`);
                         await uploadString(storageRef, audioDataUrl, 'data_url');
                         audioDataUrl = await getDownloadURL(storageRef);
-                    } catch (uploadError) {
-                        console.error("Failed to upload AI song to storage, falling back to base64:", uploadError);
+                    } catch (uploadError: any) {
+                        if (uploadError?.code === 'storage/retry-limit-exceeded' || uploadError?.message?.includes('retry-limit-exceeded')) {
+                            console.warn("Firebase Storage not configured or unreachable. Falling back to base64.");
+                            isStorageAvailable = false;
+                        } else {
+                            console.error("Failed to upload AI song to storage, falling back to base64:", uploadError);
+                        }
                     }
                 }
 
@@ -395,10 +402,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             }
         } catch (error: any) {
             console.error("Error generating song:", error);
+            setIsSongGenerating(false); // Set to false immediately so error shows
             if (error.message?.includes("Requested entity was not found")) {
                 setSuggestionError("API Key error. Please re-select your API key.");
                 if (typeof (window as any).aistudio !== 'undefined') {
-                    await (window as any).aistudio.openSelectKey();
+                    // Don't await here, let it open asynchronously so we don't block
+                    (window as any).aistudio.openSelectKey().catch(console.error);
                 }
             } else {
                 setSuggestionError(`Error generating song: ${error.message}`);
@@ -453,8 +462,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
 
         setIsSuggestionLoading(true);
         setSuggestionError(null);
-        setSuggestion('');
-        setGroundingChunks([]);
+        if (!isRefinement) {
+            setSuggestion('');
+            setGroundingChunks([]);
+        }
         
         // Use the current feedback only if it's a refinement request
         const currentFeedback = isRefinement ? feedback : '';
@@ -518,11 +529,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
             const clipId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString();
             let downloadURL = "";
             
-            if (storage) {
-                const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clipId}`);
-                await uploadBytes(storageRef, blob);
-                downloadURL = await getDownloadURL(storageRef);
-            } else {
+            if (isStorageAvailable && storage) {
+                try {
+                    const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clipId}`);
+                    await uploadBytes(storageRef, blob);
+                    downloadURL = await getDownloadURL(storageRef);
+                } catch (uploadError: any) {
+                    if (uploadError?.code === 'storage/retry-limit-exceeded' || uploadError?.message?.includes('retry-limit-exceeded')) {
+                        console.warn("Firebase Storage not configured or unreachable. Falling back to base64.");
+                        isStorageAvailable = false;
+                    } else {
+                        console.error("Failed to upload recording to storage, falling back to base64:", uploadError);
+                    }
+                }
+            }
+            
+            if (!downloadURL) {
                 downloadURL = await new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(blob);

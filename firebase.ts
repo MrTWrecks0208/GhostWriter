@@ -11,6 +11,7 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export let storage: FirebaseStorage | null = null;
 try {
   storage = getStorage(app);
+  storage.maxUploadRetryTime = 1000; // 1 second
 } catch (e) {
   console.error("Firebase Storage initialization failed:", e);
 }

@@ -31,15 +31,16 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
   groundingChunks
 }) => {
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading && !suggestion) {
       return (
         <div className="flex flex-col items-center justify-center text-center p-8">
-          <img 
-            src="https://i.postimg.cc/3RS1sFS5/ezgif-com-crop-(1).gif" 
-            alt="Loading..." 
-            className="w-24 h-24 object-contain"
-            referrerPolicy="no-referrer"
-          />
+          <div className="flex items-center justify-center gap-3 h-24">
+            <div className="w-5 h-5 rounded-full bg-[#ea4335] animate-wave" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-5 h-5 rounded-full bg-[#4285f4] animate-wave" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-5 h-5 rounded-full bg-[#34a853] animate-wave" style={{ animationDelay: '300ms' }}></div>
+            <div className="w-5 h-5 rounded-full bg-[#fbbc05] animate-wave" style={{ animationDelay: '450ms' }}></div>
+            <div className="w-5 h-5 rounded-full bg-[#ff6d00] animate-wave" style={{ animationDelay: '600ms' }}></div>
+          </div>
           <p className="mt-4 text-gray-400">Your AI partner is thinking...</p>
         </div>
       );
@@ -59,17 +60,17 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
             <div className="flex flex-col gap-6 relative">
                 <button 
                     onClick={onClearSuggestion}
-                    className="absolute -top-2 -right-2 p-1.5 bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white rounded-full transition-all shadow-lg border border-white/10"
+                    className="absolute -top-2 -right-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-full transition-all shadow-lg border border-white/10 flex items-center justify-center"
                     title="Clear suggestion"
                 >
-                    <ClearIcon className="w-3.5 h-3.5" />
+                    <span className="text-white text-xs font-medium">Clear</span>
                 </button>
-                <div className="markdown-body prose prose-invert prose-p:text-gray-300 prose-p:mb-4 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-accent-light prose-headings:to-accent prose-li:text-gray-300">
+                <div className="markdown-body prose prose-invert m-8 whitespace-pre-wrap prose-p:text-gray-300 prose-p:mb-6 last:prose-p:mb-0 prose-strong:text-gray-100 prose-headings:text-transparent prose-headings:bg-clip-text prose-headings:bg-gradient-to-r prose-headings:from-accent-light prose-headings:to-accent prose-headings:mt-8 prose-headings:mb-4 prose-li:text-gray-300">
                     <ReactMarkdown>{suggestion}</ReactMarkdown>
                 </div>
 
                 {groundingChunks && groundingChunks.length > 0 && (
-                    <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                    <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
                         <h4 className="text-sm font-bold text-gray-300 mb-2 flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                             Sources & References
@@ -125,10 +126,14 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
                         <button
                             onClick={onRegenerate}
                             disabled={!feedback.trim() || isLoading}
-                            className="absolute bottom-3 right-3 p-2 bg-main hover:bg-main-dark disabled:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-all"
+                            className="absolute bottom-3 right-3 p-2 bg-main hover:bg-main-dark disabled:bg-gray-700 disabled:opacity-50 text-white rounded-lg transition-all flex items-center justify-center min-w-[32px] min-h-[32px]"
                             aria-label="Submit feedback"
                         >
-                            <PaperAirplaneIcon className="w-4 h-4" />
+                            {isLoading ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <PaperAirplaneIcon className="w-4 h-4" />
+                            )}
                         </button>
                     </div>
                     <p className="text-[10px] text-gray-500 mt-1">Press Ctrl+Enter to submit</p>
