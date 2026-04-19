@@ -139,8 +139,9 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
         
         <div className="relative z-10 flex flex-col items-center w-full mt-12 mb-8">
             <img src="/logo.png" alt="" className="w-32 h-32 md:w-48 md:h-48 object-contain mb-4" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-2 tracking-tighter flex items-center justify-center">
-                <img src="/wordmark.png" alt="GhostWriter" className="max-h-24 md:max-h-32 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerText = 'GhostWriter'; }} />
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-2 tracking-tighter flex items-center justify-center relative min-h-[6rem] md:min-h-[8rem]">
+                <span className="absolute inset-0 flex items-center justify-center -z-10 opacity-20">GhostWriter</span>
+                <img src="/wordmark.png" alt="GhostWriter" className="max-h-24 md:max-h-32 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.previousElementSibling!.classList.remove('opacity-20', '-z-10'); }} />
             </h1>
             <p className="text-xl text-accent-light/60 mb-8 font-medium">
                 Your AI Songwriting Partner

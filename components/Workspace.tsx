@@ -786,8 +786,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack }) => {
                             <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider">Guest Mode</span>
                         </div>
                     )}
-                    <button onClick={() => setIsCompanionSelectorOpen(true)} className="p-0 transition-colors flex-shrink-0 text-gray-300 hover:text-yellow-500 active:text-yellow-600 relative overflow-hidden rounded-full w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10" aria-label="Change companion" title="Change AI Companion">
-                         <img src="/logo.png" alt="Companion" className="w-6 h-6 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>'; }} />
+                    <button onClick={() => setIsCompanionSelectorOpen(true)} className="p-0 transition-colors flex-shrink-0 text-gray-300 hover:text-yellow-500 active:text-yellow-600 relative overflow-hidden rounded-full w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 group" aria-label="Change companion" title="Change AI Companion">
+                         <svg fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6 absolute inset-0 m-auto text-gray-300 group-hover:text-yellow-500 transition-colors"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                         <img src="/logo.png" alt="Companion" className="w-6 h-6 object-contain relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                     </button>
                 </div>
                 
