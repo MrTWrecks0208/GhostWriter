@@ -155,9 +155,9 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
           )}
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="transition-transform hover:scale-110 active:scale-95 focus:outline-none hover:brightness-110"
+            className="transition-transform hover:scale-120 active:scale-95 focus:outline-none hover:brightness-110"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent-light flex items-center justify-center shadow-lg shadow-accent-light/20 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-600 to-pink-500 flex items-center justify-center hover:drop-shadow-xl/25 hover:drop-shadow-pink-200/25 overflow-hidden">
               {auth.currentUser?.photoURL ? (
                 <img src={auth.currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (

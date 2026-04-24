@@ -3,6 +3,13 @@ import { motion } from 'motion/react';
 import { CheckIcon } from 'lucide-react';
 import { auth } from '../firebase';
 
+const aiFeatureMapping: Record<string, string[]> = {
+  'Basic AI Suggestions': ['Suggest Next Lines', 'Find Rhymes', 'Review Lyrics'],
+  'Advanced AI Suggestions': ['Improve Lyrics', 'Suggest Structure', 'Suggest Chords', 'Suggest Beat', 'Export Projects'],
+  'Professional AI Suggestions': ['Change Style', 'Suggest Melody', 'Check Originality', 'Version History'],
+  'Premium AI Models': ['Generate Song', 'Generate Hook for TikTok', 'Radio-Ready Polish', 'Studio Mode', 'Export Recordings to DAW-Compatible Formats']
+};
+
 interface PricingProps {
   onBack: () => void;
 }
@@ -12,29 +19,38 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
 
   const tiers = [
     {
-      name: 'Free',
+      name: 'Open Mic',
       price: { monthly: 0, annually: 0 },
       description: 'Perfect for getting started.',
-      features: ['Basic AI suggestions', '3 projects', 'Standard support'],
+      features: ['Basic AI Suggestions', 'Up to 3 Projects', 'Limited Daily Generations', 'Standard Support'],
       buttonText: 'Current Plan',
       isCurrent: true,
     },
-    {
-      name: 'Paid Tier 1',
-      price: { monthly: 9.99, annually: 99.99 },
+        {
+      name: 'Rising Artist',
+      price: { monthly: 12, annually: 120 },
       description: 'For serious songwriters.',
-      features: ['Advanced AI suggestions', 'Unlimited projects', 'Priority support', 'Custom companions'],
-      buttonText: 'Upgrade to Tier 1',
+      features: ['Advanced AI Suggestions', 'Unlimited Projects', 'Choice of Companion', 'Priority Support'],
+      buttonText: 'Upgrade',
       priceId: { monthly: 'price_tier1_monthly', annually: 'price_tier1_annually' },
+      isPopular: false,
+    },
+    {
+      name: 'Headliner',
+      price: { monthly: 24, annually: 240 },
+      description: 'For serious songwriters.',
+      features: ['Professional AI Suggestions', 'Version History', 'Export Projects', 'Priority Support' ],
+      buttonText: 'Upgrade',
+      priceId: { monthly: 'price_tier2_monthly', annually: 'price_tier2_annually' },
       isPopular: true,
     },
     {
-      name: 'Paid Tier 2',
-      price: { monthly: 19.99, annually: 199.99 },
+      name: 'Legend',
+      price: { monthly: 48, annually: 480 },
       description: 'The ultimate creative suite.',
-      features: ['Premium AI models', 'Early access to features', 'Collaborative tools', 'Personalized feedback'],
-      buttonText: 'Upgrade to Tier 2',
-      priceId: { monthly: 'price_tier2_monthly', annually: 'price_tier2_annually' },
+      features: ['Premium AI Models', 'Studio Mode', 'AI Demos', 'Early Access to Features', 'Collaborative Tools', 'Personalized Feedback'],
+      buttonText: 'Upgrade',
+      priceId: { monthly: 'price_tier3_monthly', annually: 'price_tier3_annually' },
     },
   ];
 
@@ -103,47 +119,87 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {tiers.map((tier) => (
-            <motion.div
-              key={tier.name}
-              whileHover={{ y: -10 }}
-              className={`relative p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col ${
-                tier.isPopular ? 'ring-2 ring-accent' : ''
-              }`}
-            >
-              {tier.isPopular && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider">
-                  Most Popular
-                </div>
-              )}
-              <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
-              <p className="text-gray-400 text-sm mb-6">{tier.description}</p>
-              <div className="mb-8">
-                <span className="text-4xl font-bold">${tier.price[billingCycle]}</span>
-                <span className="text-gray-400 text-sm">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-              </div>
-              <ul className="space-y-4 mb-8 flex-grow">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-gray-300">
-                    <CheckIcon className="w-4 h-4 text-accent" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => handleSubscribe(tier.name, billingCycle === 'monthly' ? tier.priceId?.monthly : tier.priceId?.annually)}
-                disabled={tier.isCurrent}
-                className={`w-full py-3 rounded-xl font-bold transition-all ${
-                  tier.isCurrent
-                    ? 'bg-white/10 text-gray-400 cursor-default'
-                    : 'bg-gradient-to-br from-accent to-accent-light hover:from-accent-light hover:to-accent text-white shadow-lg shadow-accent/20'
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-7xl mx-auto mt-8 md:mt-16 pb-12 px-4">
+          {tiers.map((tier, idx) => {
+            const popularIndex = tiers.findIndex((t) => t.isPopular);
+            const isPopular = tier.isPopular;
+            const distance = Math.abs(idx - popularIndex);
+            
+            let zIndexClass = 'z-10';
+            if (isPopular) zIndexClass = 'z-30';
+            else if (distance === 1) zIndexClass = 'z-20';
+            
+            let scaleClass = isPopular ? 'scale-100 md:scale-105' : 'scale-100 md:scale-95';
+            let opacityClass = isPopular ? 'opacity-100' : 'opacity-100 md:opacity-90';
+            if (!isPopular && distance > 1) {
+                scaleClass = 'scale-100 md:scale-90';
+                opacityClass = 'opacity-100 md:opacity-80';
+            }
+
+            const marginClass = idx !== 0 ? 'mt-8 md:mt-0 md:-ml-2 lg:-ml-3' : '';
+
+            return (
+              <motion.div
+                key={tier.name}
+                whileHover={{ y: -10, zIndex: 40, opacity: 1, scale: 1.05 }}
+                className={`relative p-6 lg:p-7 rounded-3xl border border-white/10 flex flex-col w-full md:w-[240px] lg:w-[280px] shrink-0 transition-all duration-500 ease-in-out ${zIndexClass} ${scaleClass} ${opacityClass} ${marginClass} ${
+                  tier.isPopular ? 'bg-[#1f2937] ring-2 ring-accent shadow-2xl shadow-accent/20' : 'bg-[#111827] hover:bg-[#1f2937]'
                 }`}
               >
-                {tier.buttonText}
-              </button>
-            </motion.div>
-          ))}
+                {tier.isPopular && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent text-white text-[10px] md:text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                    Most Popular
+                  </div>
+                )}
+                <h3 className="text-xl md:text-2xl font-bold mb-2">{tier.name}</h3>
+                <p className="text-gray-400 text-xs md:text-sm mb-6 h-10">{tier.description}</p>
+                <div className="mb-6 md:mb-8">
+                  <span className="text-3xl lg:text-4xl font-bold">${tier.price[billingCycle]}</span>
+                  <span className="text-gray-400 text-xs md:text-sm">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                </div>
+                <ul className="space-y-3 md:space-y-4 mb-8 flex-grow">
+                  {tier.features.map((feature) => {
+                    const subFeatures = aiFeatureMapping[feature];
+                    return (
+                      <li key={feature} className="flex items-center gap-2 text-xs md:text-sm text-gray-300 group relative">
+                        <CheckIcon className="w-4 h-4 text-accent shrink-0" />
+                        {subFeatures ? (
+                          <div className="relative flex items-center cursor-help border-b border-dashed border-gray-500 hover:border-white transition-colors">
+                            <span>{feature}</span>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 p-3 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none isolate">
+                              <p className="text-[10px] font-bold text-accent uppercase tracking-wider mb-2 pb-2 border-b border-gray-700">AI Features Included</p>
+                              <ul className="space-y-1.5">
+                                {subFeatures.map(sub => (
+                                  <li key={sub} className="text-xs text-gray-300 flex items-start gap-1.5 leading-snug">
+                                    <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
+                                    {sub}
+                                  </li>
+                                ))}
+                              </ul>
+                              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 border-b border-r border-gray-700 transform rotate-45" />
+                            </div>
+                          </div>
+                        ) : (
+                          <span>{feature}</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  onClick={() => handleSubscribe(tier.name, billingCycle === 'monthly' ? tier.priceId?.monthly : tier.priceId?.annually)}
+                  disabled={tier.isCurrent}
+                  className={`w-full py-2.5 md:py-3 rounded-xl font-bold transition-all text-sm md:text-base ${
+                    tier.isCurrent
+                      ? 'bg-white/10 text-gray-400 cursor-default'
+                      : 'bg-gradient-to-br from-accent to-accent-light hover:from-accent-light hover:to-accent text-white shadow-lg shadow-accent/20'
+                  }`}
+                >
+                  {tier.buttonText}
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>

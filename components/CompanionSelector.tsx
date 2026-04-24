@@ -57,8 +57,8 @@ const CompanionSelector: React.FC<CompanionSelectorProps> = ({ companions, selec
                 </div>
                 {isLocked && (
                   <div className="flex flex-col items-center justify-center shrink-0">
-                    <SparklesIcon className="w-5 h-5 text-accent mb-1" />
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-wider">Premium</span>
+                    <SparklesIcon className="w-5 h-5 text-yellow-500 mb-1" />
+                    <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Premium</span>
                   </div>
                 )}
               </button>
@@ -67,7 +67,7 @@ const CompanionSelector: React.FC<CompanionSelectorProps> = ({ companions, selec
         </div>
         {isFree && (
           <div className="mt-6 text-center">
-            <button onClick={onGoToPricing} className="text-sm text-accent hover:text-accent-light transition-colors">
+            <button onClick={onGoToPricing} className="text-sm text-white hover:text-accent transition-colors">
               Upgrade to unlock more companions &rarr;
             </button>
           </div>

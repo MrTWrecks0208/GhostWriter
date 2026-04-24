@@ -125,7 +125,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <p className="text-sm text-gray-400 uppercase tracking-wider font-bold">Current Plan</p>
-                      <p className="text-xl font-bold">Free Tier</p>
+                      <p className="text-xl font-bold">Open Mic (Free Tier)</p>
                     </div>
                     <span className="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full uppercase">Active</span>
                   </div>
@@ -134,7 +134,7 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
                     onClick={onGoToPricing}
                     className="w-full py-3 bg-gradient-to-r from-accent to-accent-light hover:from-accent-light hover:to-accent rounded-xl font-bold transition-all shadow-lg shadow-accent/20"
                   >
-                    View Pricing & Upgrade
+                    Upgrade
                   </button>
                 </div>
 
