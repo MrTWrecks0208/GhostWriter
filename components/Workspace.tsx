@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { doc, onSnapshot, updateDoc, getDoc, collection, addDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc, collection, addDoc, query, orderBy, deleteDoc, increment } from 'firebase/firestore';
 import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { SuggestionType, Companion, ChatMessage, Project, AudioClip, ProjectVersion } from '../types';
+import { SuggestionType, Companion, ChatMessage, Project, AudioClip, ProjectVersion, SUGGESTION_COSTS, getEffectiveSuggestionCost } from '../types';
 import { getAiSuggestion, getRhymes } from '../services/geminiService';
 import { GoogleGenAI, Chat } from "@google/genai";
 import { motion } from 'motion/react';
@@ -28,6 +28,8 @@ import { Sparkles as SparklesIcon } from 'lucide-react';
 
 import { handleFirestoreError, OperationType } from '../services/firestoreUtils';
 import { useSubscription } from '../hooks/useSubscription';
+import { useUserCredits } from '../hooks/useUserCredits';
+import { Zap } from 'lucide-react';
 
 interface WorkspaceProps {
     projectId: string;
@@ -39,6 +41,7 @@ let isStorageAvailable = true;
 
 const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing }) => {
     const subscription = useSubscription();
+    const { credits } = useUserCredits(auth.currentUser?.uid);
     // Project Metadata
     const [projectTitle, setProjectTitle] = useState('Untitled Song');
 
@@ -309,12 +312,32 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             setSuggestionError('Write something to find rhymes for the last word.');
             return;
         }
+        
+        const successDeduction = await deductCredits(SuggestionType.RHYMES);
+        if (!successDeduction) return;
+
         setRhymeState({ isOpen: true, word: lastWord, rhymes: [], isLoading: true, error: null });
         try {
             const rhymes = await getRhymes(lastWord);
             setRhymeState(prev => ({ ...prev, rhymes, isLoading: false }));
         } catch (e: any) {
             setRhymeState(prev => ({...prev, error: e.message, isLoading: false }));
+        }
+    };
+
+    const deductCredits = async (type: SuggestionType): Promise<boolean> => {
+        if (!auth.currentUser) return false;
+        const cost = getEffectiveSuggestionCost(type, subscription.tier);
+        if (cost === 0) return true; // It's free!
+
+        try {
+            const userRef = doc(db, 'users', auth.currentUser.uid);
+            await updateDoc(userRef, { credits: increment(-cost) });
+            return true;
+        } catch (e) {
+            console.error("Failed to deduct credits:", e);
+            setSuggestionError('Failed to deduct credits. Please try again.');
+            return false;
         }
     };
 
@@ -340,6 +363,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             } catch (e) {
                 console.error("Error checking/requesting API key:", e);
             }
+        }
+
+        const successDeduction = await deductCredits(SuggestionType.GENERATE_SONG);
+        if (!successDeduction) {
+            setIsSongGenerating(false);
+            return;
         }
 
         try {
@@ -476,6 +505,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         const currentFeedback = isRefinement ? feedback : '';
         const effectiveStyle = styleName || (type === SuggestionType.STYLE_MIMIC ? selectedMusician : undefined);
         const effectiveStyleType = styleType || (type === SuggestionType.STYLE_MIMIC ? selectedStyleType : undefined);
+        
+        const successDeduction = await deductCredits(type);
+        if (!successDeduction) {
+            setIsSuggestionLoading(false);
+            return;
+        }
+
         const result = await getAiSuggestion(lyrics, type, currentFeedback, companion.systemInstruction, effectiveStyle, effectiveStyleType);
         
         if (result.text.toLowerCase().includes('error occurred')) {
@@ -709,9 +745,23 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 appearance-none cursor-pointer"
                             >
                                 <option value="" disabled className="bg-[#1d2951]">Select {musicianModal.type === 'artist' ? 'an Artist' : 'a Genre'}</option>
-                                {(musicianModal.type === 'artist' ? POPULAR_ARTISTS : POPULAR_GENRES).map(item => (
-                                    <option key={item} value={item} className="bg-[#1d2951]">{item}</option>
-                                ))}
+                                {musicianModal.type === 'artist' ? (
+                                    POPULAR_ARTISTS.map(group => (
+                                        Array.isArray(group.options) ? (
+                                            <optgroup key={group.label} label={group.label} className="bg-[#1d2951] font-bold text-gray-400">
+                                                {group.options.map(artist => (
+                                                    <option key={artist} value={artist} className="bg-[#1d2951] text-white font-normal">{artist}</option>
+                                                ))}
+                                            </optgroup>
+                                        ) : (
+                                            <option key={group.label} value={group.options} className="bg-[#1d2951] text-white">{group.label}</option>
+                                        )
+                                    ))
+                                ) : (
+                                    POPULAR_GENRES.map(item => (
+                                        <option key={item} value={item} className="bg-[#1d2951]">{item}</option>
+                                    ))
+                                )}
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="m6 9 6 6 6-6"/></svg>
@@ -786,13 +836,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                             className="bg-transparent text-xl md:text-2xl font-bold text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded px-2 w-full transition-all"
                         />
                     </div>
-                    {auth.currentUser?.isAnonymous && (
-                        <div className="px-2 sm:px-3 py-1 bg-pink-500/20 border border-pink-500/30 rounded-full flex items-center gap-2 flex-shrink-0">
-                            <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse shrink-0" />
-                            <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider hidden sm:block">Guest Mode</span>
-                            <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider sm:hidden">Guest</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0 md:hidden">
+                        {credits !== null && (
+                            <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-1.5 text-xs font-bold text-gray-300">
+                                <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/20" />
+                                <span>{credits}</span>
+                                <span className="hidden sm:inline">Credits</span>
+                            </div>
+                        )}
+                        {auth.currentUser?.isAnonymous && (
+                            <div className="px-2 sm:px-3 py-1 bg-pink-500/20 border border-pink-500/30 rounded-full flex items-center gap-2 flex-shrink-0">
+                                <div className="w-2 h-2 rounded-full bg-pink-500 animate-pulse shrink-0" />
+                                <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider hidden sm:block">Guest Mode</span>
+                                <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider sm:hidden">Guest</span>
+                            </div>
+                        )}
+                    </div>
                     <button onClick={() => setIsCompanionSelectorOpen(true)} className="p-0 transition-colors flex-shrink-0 text-white hover:text-yellow-500 active:text-yellow-600 relative overflow-hidden w-6 h-6 flex items-center justify-center group" aria-label="Change companion" title="Change AI Companion">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bot-message-square-icon lucide-bot-message-square"><path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/></svg>
                          <img src="/logo.png" alt="Companion" className="w-6 h-6 object-contain relative z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />

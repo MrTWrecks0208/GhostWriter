@@ -53,7 +53,11 @@ const SuggestionDisplay: React.FC<SuggestionDisplayProps> = ({
                 <div className="w-5 h-5 rounded-full bg-[#fbbc05] animate-wave" style={{ animationDelay: '450ms' }}></div>
                 <div className="w-5 h-5 rounded-full bg-[#ff6d00] animate-wave" style={{ animationDelay: '600ms' }}></div>
               </div>
-              <p className="mt-4 text-gray-400">Your AI partner is thinking...</p>
+              <p className="mt-8 text-gray-400 font-medium tracking-wide">Your AI partner is thinking...</p>
+              
+              <div className="w-full max-w-md mt-6 bg-black/40 rounded-full h-2 overflow-hidden border border-white/10 relative">
+                  <div className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full absolute top-0 left-0 animate-progress"></div>
+              </div>
             </div>
         </div>
       );

@@ -12,6 +12,8 @@ import { User as UserIcon, Settings as SettingsIcon, LogOut, ChevronDown, Credit
 
 import { handleFirestoreError, OperationType } from '../services/firestoreUtils';
 import { useSubscription } from '../hooks/useSubscription';
+import { useUserCredits } from '../hooks/useUserCredits';
+import { Zap } from 'lucide-react';
 
 interface ProjectListProps {
   onSelectProject: (projectId: string) => void;
@@ -24,6 +26,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
   const [isLoading, setIsLoading] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const subscription = useSubscription();
+  const { credits } = useUserCredits(auth.currentUser?.uid);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -145,7 +148,14 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
           <p className="text-xs sm:text-base text-gray-300">Manage your songs and creative ideas</p>
         </div>
         
-        <div className="relative flex items-center gap-2 sm:gap-4 shrink-0 mt-1 sm:mt-0">
+        <div className="relative flex items-center gap-2 sm:gap-4 shrink-0 mt-1 sm:mt-0 md:hidden">
+          {credits !== null && (
+            <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-1.5 text-xs font-bold text-gray-300">
+              <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/20" />
+              <span>{credits}</span>
+              <span className="hidden sm:inline">Credits</span>
+            </div>
+          )}
           {auth.currentUser?.isAnonymous && (
             <div className="px-2 sm:px-3 py-1 bg-accent/20 border border-accent/30 rounded-full flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />

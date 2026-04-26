@@ -119,7 +119,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-7xl mx-auto mt-8 md:mt-16 pb-12 px-4">
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-7xl mx-auto mt-8 md:mt-16 pb-12 px-2 md:px-4">
           {tiers.map((tier, idx) => {
             const popularIndex = tiers.findIndex((t) => t.isPopular);
             const isPopular = tier.isPopular;
@@ -129,20 +129,16 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
             if (isPopular) zIndexClass = 'z-30';
             else if (distance === 1) zIndexClass = 'z-20';
             
-            let scaleClass = isPopular ? 'scale-100 md:scale-105' : 'scale-100 md:scale-95';
-            let opacityClass = isPopular ? 'opacity-100' : 'opacity-100 md:opacity-90';
-            if (!isPopular && distance > 1) {
-                scaleClass = 'scale-100 md:scale-90';
-                opacityClass = 'opacity-100 md:opacity-80';
-            }
+            let scaleClass = isPopular ? 'scale-100 md:scale-105' : 'scale-100';
+            let opacityClass = isPopular ? 'opacity-100' : 'opacity-100 md:opacity-[0.85]';
 
-            const marginClass = idx !== 0 ? 'mt-8 md:mt-0 md:-ml-2 lg:-ml-3' : '';
+            const marginClass = idx !== 0 ? 'mt-8 md:mt-0 md:-ml-4 lg:-ml-6' : '';
 
             return (
               <motion.div
                 key={tier.name}
                 whileHover={{ y: -10, zIndex: 40, opacity: 1, scale: 1.05 }}
-                className={`relative p-6 lg:p-7 rounded-3xl border border-white/10 flex flex-col w-full md:w-[240px] lg:w-[280px] shrink-0 transition-all duration-500 ease-in-out ${zIndexClass} ${scaleClass} ${opacityClass} ${marginClass} ${
+                className={`relative p-5 lg:p-6 rounded-3xl border border-white/10 flex flex-col w-full md:w-[230px] lg:w-[270px] shrink-0 transition-all duration-500 ease-in-out ${zIndexClass} ${scaleClass} ${opacityClass} ${marginClass} ${
                   tier.isPopular ? 'bg-[#1f2937] ring-2 ring-accent shadow-2xl shadow-accent/20' : 'bg-[#111827] hover:bg-[#1f2937]'
                 }`}
               >
