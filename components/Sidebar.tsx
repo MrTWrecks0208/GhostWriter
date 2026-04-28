@@ -96,12 +96,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, user }) => {
         </div>
 
         {credits !== null && (
-          <div className={`flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 ${isCollapsed ? 'p-2 rounded-full justify-center mt-2' : 'px-4 py-2.5 rounded-xl'}`} title={isCollapsed ? `Credits: ${credits}` : undefined}>
+          <div className={`flex items-center justify-between bg-white/5 border border-white/10 transition-colors ${isCollapsed ? 'p-2 rounded-full justify-center mt-2' : 'px-4 py-2.5 rounded-xl'}`} title={isCollapsed ? `Sparks: ${credits}` : undefined}>
              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-500 fill-yellow-500/20 shrink-0" />
-                {!isCollapsed && <span className="text-sm font-medium text-yellow-500">Credits</span>}
+                <Zap className={`w-4 h-4 shrink-0 transition-colors ${credits > 10 ? 'text-accent drop-shadow-[0_0_8px_rgba(219,39,119,0.5)]' : 'text-gray-500'}`} />
+                {!isCollapsed && <span className="text-sm font-medium text-gray-300">Sparks</span>}
              </div>
-             {!isCollapsed && <span className="text-sm font-bold text-yellow-500">{credits}</span>}
+             {!isCollapsed && <span className="text-sm font-bold text-gray-200">{credits}</span>}
           </div>
         )}
 

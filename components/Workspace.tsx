@@ -330,6 +330,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         const cost = getEffectiveSuggestionCost(type, subscription.tier);
         if (cost === 0) return true; // It's free!
 
+        // Grace buffer logic: Allow going slightly into negative
+        if (credits !== null && credits - cost < -3) {
+            setSuggestionError("You're on a roll! We've pushed past our creative limits for this session. Let's add some more sparks to keep the momentum going.");
+            return false;
+        }
+
         try {
             const userRef = doc(db, 'users', auth.currentUser.uid);
             await updateDoc(userRef, { credits: increment(-cost) });

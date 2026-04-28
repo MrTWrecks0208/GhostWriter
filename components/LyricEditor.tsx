@@ -141,6 +141,11 @@ const LyricEditor = forwardRef<LyricEditorHandles, LyricEditorProps>(({ value, o
     
     recognition.onerror = (event) => {
         console.error("SpeechRecognition error:", event.error);
+        if (event.error === 'network') {
+            alert('Speech recognition failed due to a network error. This could be temporary or caused by browser restrictions.');
+        } else if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+            alert("Microphone access was denied or not found. Please allow microphone access to use dictation.");
+        }
         setIsRecording(false);
     }
     

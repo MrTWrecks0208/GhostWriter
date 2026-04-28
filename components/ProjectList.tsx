@@ -150,10 +150,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
         
         <div className="relative flex items-center gap-2 sm:gap-4 shrink-0 mt-1 sm:mt-0 md:hidden">
           {credits !== null && (
-            <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-1.5 text-xs font-bold text-gray-300">
-              <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/20" />
+            <div className={`px-3 py-1.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-1.5 text-xs font-bold transition-colors ${credits > 10 ? 'text-gray-200' : 'text-gray-400'}`}>
+              <Zap className={`w-3.5 h-3.5 shrink-0 ${credits > 10 ? 'text-accent drop-shadow-[0_0_8px_rgba(219,39,119,0.5)]' : 'text-gray-500'}`} />
               <span>{credits}</span>
-              <span className="hidden sm:inline">Credits</span>
+              <span className="hidden sm:inline">Sparks</span>
             </div>
           )}
           {auth.currentUser?.isAnonymous && (
