@@ -1,8 +1,9 @@
 {
-  "name": "GhostWriter",
+  "name": "Songweaver",
   "description": "Your AI songwriting companion helps you write lyrics, suggests melodies, analyzes your song structure, and so much more!\nRecord your ideas or type them in to get instant creative feedback.",
   "requestFramePermissions": [
     "microphone",
     "camera"
-  ]
+  ],
+  "majorCapabilities": []
 }

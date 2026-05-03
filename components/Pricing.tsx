@@ -4,10 +4,10 @@ import { CheckIcon } from 'lucide-react';
 import { auth } from '../firebase';
 
 const aiFeatureMapping: Record<string, string[]> = {
-  'Basic AI Suggestions': ['Suggest Next Lines', 'Find Rhymes', 'Review Lyrics'],
-  'Advanced AI Suggestions': ['Improve Lyrics', 'Suggest Structure', 'Suggest Chords', 'Suggest Beat', 'Export Projects'],
-  'Professional AI Suggestions': ['Change Style', 'Suggest Melody', 'Check Originality', 'Version History'],
-  'Premium AI Models': ['Generate Song', 'Generate Hook for TikTok', 'Radio-Ready Polish', 'Studio Mode', 'Export Recordings to DAW-Compatible Formats']
+  'Core Writing Tools': ['Suggest Next Lines', 'Find Rhymes', 'Review Lyrics', 'Check Common Phrases', 'Suggest Structure'],
+  'All Writing Tools': ['All Core Tools', 'Prompt to Lyrics', 'Improve Lyrics', 'Suggest Chords', 'Suggest Beat', 'Export Project as ZIP', 'Sentiment Analysis'],
+  'Advanced AI Tools': ['All Writing Tools', 'Fit to Your Style', 'Suggest Melody', 'Change Style', 'Tone Switcher', 'Check Originality', 'Stem Splitter', 'Generate Hook for TikTok'],
+  'All Features Unlocked': ['All Advanced Tools', 'Generate Song', 'Radio-Ready Polish', 'Studio Mode', 'Export Recordings to DAW Formats']
 };
 
 interface PricingProps {
@@ -39,7 +39,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
       name: 'Headliner',
       price: { monthly: 24, annually: 240 },
       description: 'For serious songwriters.',
-      features: ['1,500 Credits / Month', 'Advanced AI Tools', '60 Projects', '40 Full- ong Generations', 'Version History', 'Export Projects'],
+      features: ['1,500 Credits / Month', 'Advanced AI Tools', '60 Projects', '40 Full Song Generations', 'Version History', 'Export Projects'],
       buttonText: 'Upgrade',
       priceId: { monthly: 'price_tier2_monthly', annually: 'price_tier2_annually' },
       isPopular: true,
@@ -90,7 +90,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
           </button>
           <div className="text-center flex-grow flex flex-col items-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-                <img src="/logo.png" alt="GhostWriter Logo" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                <img src="/logo.png" alt="Songweaver Logo" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
                 <h1 className="text-4xl font-bold">Pricing Plans</h1>
             </div>
             <p className="text-gray-300">Choose the plan that fits your creative journey.</p>

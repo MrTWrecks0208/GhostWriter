@@ -26,7 +26,7 @@ const Landing: React.FC<LandingProps> = ({ onSignInClick, onSignUpClick, onGuest
       <header className="relative z-20 flex items-center justify-between px-4 md:px-8 py-4">
         <div className="flex items-center gap-3">
           <div className="relative group flex items-center">
-            <img src="/Wordmark.png" alt="GhostWriter Logo" className="h-16 md:h-20 object-contain transition-transform z-10" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML += '<span class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-0.5">GhostWriter</span>'; }} />
+            <img src="/Wordmark.png" alt="Songweaver Logo" className="h-16 md:h-20 object-contain transition-transform z-10" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML += '<span class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-0.5">Songweaver</span>'; }} />
           </div>
         </div>
         <nav className="flex items-center gap-4 md:gap-6">
@@ -427,7 +427,7 @@ const Landing: React.FC<LandingProps> = ({ onSignInClick, onSignUpClick, onGuest
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 py-12 px-6 text-center text-gray-500 text-sm">
-        <p>© 2026 GhostWriter. Your AI Songwriting Partner.</p>
+        <p>© 2026 Songweaver. Your AI Songwriting Partner.</p>
       </footer>
     </div>
   );

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { doc, onSnapshot, updateDoc, getDoc, collection, addDoc, query, orderBy, deleteDoc, increment, getDocs } from 'firebase/firestore';
 import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { SuggestionType, Companion, ChatMessage, Project, AudioClip, ProjectVersion, SUGGESTION_COSTS, getEffectiveSuggestionCost } from '../types';
 import { getAiSuggestion, getRhymes } from '../services/geminiService';
 import { GoogleGenAI, Chat } from "@google/genai";
@@ -79,7 +81,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
     
     // Rhyme finder state
     const [rhymeState, setRhymeState] = useState({ isOpen: false, word: '', rhymes: [], isLoading: false, error: null as string | null });
-    const [songPromptModal, setSongPromptModal] = useState({ isOpen: false, prompt: '' });
+    const [songPromptModal, setSongPromptModal] = useState<{ isOpen: boolean, prompt: string, requestedType?: SuggestionType }>({ isOpen: false, prompt: '' });
     const [stemSplitterState, setStemSplitterState] = useState({ isOpen: false, selectedClipId: '', isLoading: false, progress: 0 });
     const [toneModal, setToneModal] = useState({ isOpen: false, tone: '', customTone: '' });
     const [selectedTone, setSelectedTone] = useState<string>('');
@@ -351,21 +353,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         }
     };
 
-    const handleGenerateSong = async (promptText: string, asText: boolean = false) => {
+    const handleGenerateSong = async (promptText: string, asText: boolean = false, requestedType?: SuggestionType) => {
         if (!promptText.trim()) {
             setSuggestionError('Please enter a prompt.');
             return;
         }
 
         if (asText) {
-            handleSuggestionRequest(SuggestionType.GENERATE_SONG, false, promptText, undefined);
+            handleSuggestionRequest(requestedType || SuggestionType.GENERATE_SONG, false, promptText, undefined);
             return;
         }
 
+        const actionType = requestedType || SuggestionType.GENERATE_SONG;
         setIsSongGenerating(true);
         setSuggestionError(null);
         setSuggestion('');
-        setActiveSuggestionType(SuggestionType.GENERATE_SONG);
+        setActiveSuggestionType(actionType);
 
         // Check for API key selection for Lyria
         if (typeof (window as any).aistudio !== 'undefined') {
@@ -380,7 +383,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             }
         }
 
-        const successDeduction = await deductCredits(SuggestionType.GENERATE_SONG);
+        const successDeduction = await deductCredits(actionType);
         if (!successDeduction) {
             setIsSongGenerating(false);
             return;
@@ -388,7 +391,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const lyriaPrompt = `Generate a 30-second song with melody and music based on this prompt:
+            const baseInstructions = actionType === SuggestionType.GENERATE_TIKTOK_HOOK
+                ? 'Generate a catchy 30-second TikTok hook optimized for virality based on this prompt:'
+                : 'Generate a 30-second song with melody and music based on this prompt:';
+                
+            const lyriaPrompt = `${baseInstructions}
             
             ${promptText}
             
@@ -525,18 +532,64 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             return;
         }
 
-        if (type === SuggestionType.GENERATE_SONG && !isRefinement) {
-            setSongPromptModal({ isOpen: true, prompt: '' });
+        if ((type === SuggestionType.GENERATE_SONG || type === SuggestionType.GENERATE_TIKTOK_HOOK) && !isRefinement) {
+            setSongPromptModal({ isOpen: true, prompt: '', requestedType: type });
             return;
         }
 
         if (
-            type === SuggestionType.EXPORT_ZIP ||
             type === SuggestionType.VERSION_HISTORY ||
             type === SuggestionType.STUDIO_MODE ||
             type === SuggestionType.EXPORT_DAW
         ) {
             alert(`${type} is coming soon!`);
+            return;
+        }
+
+        if (type === SuggestionType.EXPORT_ZIP) {
+            try {
+                const zip = new JSZip();
+                zip.file(`${projectTitle}.txt`, lyrics);
+                const audioFolder = zip.folder("audioclips");
+                if (audioFolder && audioClips.length > 0) {
+                    await Promise.all(audioClips.map(async (clip, idx) => {
+                        if (clip.audioData.startsWith('data:audio/wav;base64,')) {
+                            const b64Data = clip.audioData.substring(22);
+                            audioFolder.file(`${clip.name}.wav`, b64Data, {base64: true});
+                        } else if (clip.audioData.startsWith('data:audio/webm;base64,')) {
+                            const b64Data = clip.audioData.substring(23);
+                            audioFolder.file(`${clip.name}.webm`, b64Data, {base64: true});
+                        } else if (clip.audioData.startsWith('http')) {
+                            // Download and add
+                            try {
+                                const response = await fetch(clip.audioData);
+                                const blob = await response.blob();
+                                audioFolder.file(`${clip.name}.wav`, blob);
+                            } catch(e) {
+                                console.error('Failed to download audio clip', clip.name);
+                            }
+                        } else {
+                           // Try generic base64 extraction
+                           const commaIdx = clip.audioData.indexOf(',');
+                           if (commaIdx > -1) {
+                               const b64Data = clip.audioData.substring(commaIdx + 1);
+                               audioFolder.file(`${clip.name}.wav`, b64Data, {base64: true});
+                           }
+                        }
+                    }));
+                }
+                const content = await zip.generateAsync({type:"blob"});
+                saveAs(content, `${projectTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'project'}.zip`);
+                setSuggestion('Project exported automatically!');
+            } catch (err) {
+                console.error(err);
+                setSuggestionError('Failed to export project: ' + String(err));
+            }
+            return;
+        }
+
+        if (type === SuggestionType.PROMPT_TO_LYRICS && !isRefinement) {
+            setSongPromptModal({ isOpen: true, prompt: '', requestedType: type });
             return;
         }
 
@@ -546,7 +599,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         }
 
         let effectiveStyleName = styleName;
-        if (type === SuggestionType.MAKE_IT_YOURS && !isRefinement) {
+        if ((type === SuggestionType.FIT_TO_STYLE || type === SuggestionType.CHECK_COMMON_PHRASES) && !isRefinement) {
             // Fetch user's past projects to serve as style string
             if (auth.currentUser) {
                 try {
@@ -560,17 +613,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                     });
                     if (pastLyrics.trim()) {
                         effectiveStyleName = pastLyrics.substring(0, 3000); // Send past lyrics
-                    } else {
+                    } else if (type === SuggestionType.FIT_TO_STYLE) {
                         setSuggestionError("You don't have enough past projects to analyze your style yet!");
                         return;
                     }
                 } catch (e) {
-                    console.error("Failed to fetch past projects for style", e);
+                    console.error("Failed to fetch past projects", e);
                 }
             }
         }
 
-        if (effectiveStyleName && type !== SuggestionType.MAKE_IT_YOURS) {
+        if (effectiveStyleName && type !== SuggestionType.FIT_TO_STYLE && type !== SuggestionType.CHECK_COMMON_PHRASES) {
             if (type === SuggestionType.TONE_SWITCHER) {
                 setSelectedTone(effectiveStyleName);
             } else {
@@ -586,7 +639,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             handleRhymeRequest();
             return;
         }
-        if (!lyrics.trim() && type !== SuggestionType.GENERATE_BEAT && type !== SuggestionType.GENERATE_SONG) {
+        if (!lyrics.trim() && type !== SuggestionType.GENERATE_BEAT && type !== SuggestionType.GENERATE_SONG && type !== SuggestionType.GENERATE_TIKTOK_HOOK) {
             setSuggestionError('Please enter some lyrics or record your voice first.');
             return;
         }
@@ -828,6 +881,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                                 <option value="Happy" className="bg-[#1d2951]">Happy</option>
                                 <option value="Sad" className="bg-[#1d2951]">Sad</option>
                                 <option value="Angry" className="bg-[#1d2951]">Angry</option>
+                                <option value="Energetic" className="bg-[#1d2951]">Energetic</option>
                                 <option value="Nostalgic" className="bg-[#1d2951]">Nostalgic</option>
                                 <option value="Hopeful" className="bg-[#1d2951]">Hopeful</option>
                                 <option value="Melancholic" className="bg-[#1d2951]">Melancholic</option>
@@ -999,13 +1053,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                         animate={{ opacity: 1, scale: 1 }}
                         className="bg-[#1d2951] border border-white/10 rounded-3xl p-8 w-full max-w-md shadow-2xl flex flex-col"
                     >
-                        <h2 className="text-2xl font-bold text-white mb-4">Prompt to Song</h2>
-                        <p className="text-sm text-gray-300 mb-6">Describe the song you want to make.</p>
+                        <h2 className="text-2xl font-bold text-white mb-4">{songPromptModal.requestedType === SuggestionType.GENERATE_TIKTOK_HOOK ? 'Prompt to TikTok Hook' : 'Prompt to Song'}</h2>
+                        <p className="text-sm text-gray-300 mb-6">{songPromptModal.requestedType === SuggestionType.GENERATE_TIKTOK_HOOK ? 'Describe the TikTok hook you want to make.' : 'Describe the song you want to make.'}</p>
                         
                         <textarea
                             value={songPromptModal.prompt}
                             onChange={(e) => setSongPromptModal(prev => ({ ...prev, prompt: e.target.value }))}
-                            placeholder="e.g. A catchy pop song about a happy dog in the summer..."
+                            placeholder={songPromptModal.requestedType === SuggestionType.GENERATE_TIKTOK_HOOK ? "e.g. A viral hook for a dance challenge with heavy bass..." : "e.g. A catchy pop song about a happy dog in the summer..."}
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 h-32 resize-none mb-6"
                         />
                         
@@ -1018,7 +1072,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                             </button>
                             <button
                                 onClick={() => {
-                                    handleGenerateSong(songPromptModal.prompt, true);
+                                    handleGenerateSong(songPromptModal.prompt, true, songPromptModal.requestedType);
                                     setSongPromptModal({ isOpen: false, prompt: '' });
                                 }}
                                 disabled={!songPromptModal.prompt.trim()}
@@ -1028,7 +1082,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                             </button>
                             <button
                                 onClick={() => {
-                                    handleGenerateSong(songPromptModal.prompt, false);
+                                    handleGenerateSong(songPromptModal.prompt, false, songPromptModal.requestedType);
                                     setSongPromptModal({ isOpen: false, prompt: '' });
                                 }}
                                 disabled={!songPromptModal.prompt.trim()}
@@ -1114,7 +1168,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                          <button onClick={handleBack} className="p-2 rounded-full hover:bg-white/10 transition-colors flex-shrink-0" aria-label="Go back">
                             <BackArrowIcon className="w-6 h-6 text-gray-300"/>
                         </button>
-                        <img src="/logo.png" alt="GhostWriter Logo" className="w-8 h-8 object-contain mr-2 hidden sm:block" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img src="/logo.png" alt="Songweaver Logo" className="w-8 h-8 object-contain mr-2 hidden sm:block" onError={(e) => e.currentTarget.style.display = 'none'} />
                         <input 
                             value={projectTitle}
                             onChange={(e) => setProjectTitle(e.target.value)}

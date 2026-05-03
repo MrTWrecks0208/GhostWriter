@@ -21,7 +21,7 @@ CRITICAL RULES:
 function getPrompt(lyrics: string, suggestionType: SuggestionType, feedback?: string, style?: string, styleType?: 'artist' | 'genre'): string {
   let prompt = "";
   switch (suggestionType) {
-    case SuggestionType.MAKE_IT_YOURS:
+    case SuggestionType.FIT_TO_STYLE:
       prompt = `I am writing a song and want help tweaking my current lyrics to better match my personal style, based on my past work.
       
 My Past Work (Style Reference):
@@ -65,9 +65,14 @@ Current Lyrics:
 ${lyrics}
 ---
 
-Task:
-1. List any words or phrases that are very commonly used in songwriting and might benefit from more original phrasing.
-2. For each identified phrase, explain *why* it's considered common or clichéd.
+${style ? `My Past Lyrics:
+---
+${style}
+---
+
+Task:` : `Task:`}
+1. Analyze both my current lyrics and my past lyrics (if provided) to identify any words or phrases that I overuse personally, or that are very commonly used in songwriting overall (clichés).
+2. For each identified phrase, explain *why* it's considered common or clichéd, and indicate if it's a personal crutch word based on the past lyrics.
 3. Suggest 2-3 fresh, alternative ways to express the same idea that fit the tone of the song.`;
       break;
 
@@ -224,7 +229,23 @@ Task:
 
 Use Google Search to verify these lyrics against existing song databases.`;
       break;
+    case SuggestionType.GENERATE_TIKTOK_HOOK:
+      prompt = `I want to generate a 30-second TikTok hook based on a prompt.
+      
+Prompt:
+---
+${style || lyrics}
+---
+
+Task:
+1. Generate an extremely catchy, hard-hitting, 30-second structural hook or drop optimized for TikTok.
+2. Structure it directly as a TikTok sound (e.g., Intro/Setup -> Build -> Drop/Hook).
+3. Emphasize rhythm and heavy impact for dances or viral edits.
+4. Keep the duration strictly around 30 seconds of perceived pacing.
+5. Provide a brief explanation of why this hook works well for TikTok.`;
+      break;
     case SuggestionType.GENERATE_SONG:
+    case SuggestionType.PROMPT_TO_LYRICS:
       prompt = `I want to generate lyrics or a song based on a prompt.
       
 Prompt:

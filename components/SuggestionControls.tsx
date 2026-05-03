@@ -9,7 +9,7 @@ import { ChordsIcon } from './icons/ChordsIcon';
 import { RhymeIcon } from './icons/RhymeIcon';
 import { ReviewIcon } from './icons/ReviewIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
-import { Sparkles as SparklesIcon, Music as MusicIcon, Radio as RadioIcon, Drum as DrumIcon, ChevronDown, ChevronUp, Zap, Archive as ArchiveIcon, History as HistoryIcon, Scissors as ScissorsIcon, Mic as MicIcon, FileUp as FileUpIcon, User as UserIcon, Search as SearchIcon, Smile as SmileIcon, Sliders as SlidersIcon } from 'lucide-react';
+import { Pencil as PencilIcon, Sparkles as SparklesIcon, Music as MusicIcon, Radio as RadioIcon, Drum as DrumIcon, ChevronDown, ChevronUp, Zap, Archive as ArchiveIcon, History as HistoryIcon, Scissors as ScissorsIcon, Mic as MicIcon, FileUp as FileUpIcon, User as UserIcon, Search as SearchIcon, Smile as SmileIcon, Sliders as SlidersIcon, Smartphone as SmartphoneIcon } from 'lucide-react';
 import { useUserCredits } from '../hooks/useUserCredits';
 import { useSubscription } from '../hooks/useSubscription';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -38,6 +38,7 @@ const suggestionGroups = [
     label: "Rising Artist",
     options: [
       { type: SuggestionType.SENTIMENT_ANALYSIS, icon: <SmileIcon className="w-4 h-4" /> },
+      { type: SuggestionType.PROMPT_TO_LYRICS, icon: <PencilIcon className="w-4 h-4" /> },
       { type: SuggestionType.IMPROVE, icon: <MagicWandIcon className="w-4 h-4" /> },
       { type: SuggestionType.CHORDS, icon: <ChordsIcon className="w-4 h-4" /> },
       { type: SuggestionType.GENERATE_BEAT, icon: <DrumIcon className="w-4 h-4" /> },
@@ -49,11 +50,12 @@ const suggestionGroups = [
     options: [
       { type: SuggestionType.STYLE_MIMIC, icon: <SparklesIcon className="w-4 h-4" /> },
       { type: SuggestionType.TONE_SWITCHER, icon: <SlidersIcon className="w-4 h-4" /> },
-      { type: SuggestionType.MAKE_IT_YOURS, icon: <UserIcon className="w-4 h-4" /> },
+      { type: SuggestionType.FIT_TO_STYLE, icon: <UserIcon className="w-4 h-4" /> },
       { type: SuggestionType.MELODY, icon: <MusicNoteIcon className="w-4 h-4" /> },
       { type: SuggestionType.ORIGINALITY_CHECK, icon: <ShieldCheckIcon className="w-4 h-4" /> },
       { type: SuggestionType.VERSION_HISTORY, icon: <HistoryIcon className="w-4 h-4" /> },
       { type: SuggestionType.STEM_SPLITTER, icon: <ScissorsIcon className="w-4 h-4" /> },
+      { type: SuggestionType.GENERATE_TIKTOK_HOOK, icon: <SmartphoneIcon className="w-4 h-4" /> },
     ]
   },
   {
@@ -161,11 +163,18 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({ onSuggestionSel
           <div className="max-h-[60vh] overflow-y-auto p-2">
             {suggestionGroups.map((group, idx) => (
                <div key={group.label} className={idx > 0 ? "mt-2 pt-2 border-t border-white/5" : ""}>
-                 <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                   {group.label}
+                 <div className="px-3 py-1.5 flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                   <span>{group.label}</span>
+                   {(() => {
+                     const groupCost = group.options.length > 0 ? getEffectiveSuggestionCost(group.options[0].type, subscription.tier) : 0;
+                     return groupCost > 0 ? (
+                       <div className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-500" /> {groupCost} Credits</div>
+                     ) : (
+                       <span className="px-1.5 py-0.5 rounded-md bg-accent/20 text-accent">Free</span>
+                     );
+                   })()}
                  </div>
                  {group.options.map(({ type, icon }) => {
-                   const itemCost = getEffectiveSuggestionCost(type, subscription.tier);
                    return (
                      <button
                        key={type}
@@ -179,18 +188,11 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({ onSuggestionSel
                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
                        }`}
                      >
-                       <div className="flex items-center gap-3">
-                         <span className={activeTool === type ? 'text-accent-light' : 'text-gray-400'}>
+                       <div className="flex items-center gap-3 text-left">
+                         <span className={`shrink-0 ${activeTool === type ? 'text-accent-light' : 'text-gray-400'}`}>
                            {icon}
                          </span>
-                         {type}
-                       </div>
-                       <div className={`flex items-center gap-1 text-xs shrink-0 ${activeTool === type ? 'text-accent-light' : 'text-gray-400'}`}>
-                         {itemCost > 0 ? (
-                           <><Zap className="w-3 h-3" /> {itemCost}</>
-                         ) : (
-                           <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-accent/10 text-accent">Free</span>
-                         )}
+                         <span>{type}</span>
                        </div>
                      </button>
                    );

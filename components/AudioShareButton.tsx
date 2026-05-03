@@ -52,7 +52,7 @@ export const AudioShareButton: React.FC<AudioShareButtonProps> = ({ audioData, f
       if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
         await navigator.share({
           title: fileName,
-          text: 'Check out my new song created with GhostWriter!',
+          text: 'Check out my new song created with Songweaver!',
           files: [fileToShare]
         });
       } else {
@@ -60,7 +60,7 @@ export const AudioShareButton: React.FC<AudioShareButtonProps> = ({ audioData, f
         if (audioData.startsWith('http')) {
           await navigator.share({
             title: fileName,
-            text: 'Check out my new song created with GhostWriter!',
+            text: 'Check out my new song created with Songweaver!',
             url: audioData
           });
         } else {
@@ -83,7 +83,7 @@ export const AudioShareButton: React.FC<AudioShareButtonProps> = ({ audioData, f
     // We can only use URL-based intents if the audio is a public remote URL
     const isPublicUrl = audioData.startsWith('http') && !audioData.includes('localhost');
     const shareUrl = isPublicUrl ? encodeURIComponent(audioData) : encodeURIComponent('https://songweaver.app');
-    const shareText = encodeURIComponent(`Listen to my new song "${fileName}" created on GhostWriter! 🎶`);
+    const shareText = encodeURIComponent(`Listen to my new song "${fileName}" created on Songweaver! 🎶`);
 
     let intentUrl = '';
     

@@ -137,7 +137,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
       <div className="flex flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-2 sm:gap-4">
         <div className="text-left">
           <div className="flex items-center gap-2 sm:gap-3 justify-start mb-1 sm:mb-2">
-            <img src="/logo.png" alt="GhostWriter Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logo.png" alt="Songweaver Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
             <h1 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-accent-light to-accent leading-tight">
               Your Projects
             </h1>
@@ -231,7 +231,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-7xl mx-auto">
         {/* Create New Card */}
         <motion.button
           whileHover={{ scale: 1.02, y: -5 }}
@@ -241,7 +241,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
         >
           <div className="absolute inset-0 backdrop-blur-md pointer-events-none -z-10" />
           <div className="py-3 px-4 rounded-xl mb-3 group-hover:scale-110 transition-transform relative flex items-center justify-center">
-            <img src="/logo.png" alt="GhostWriter Logo" className="w-10 h-10 object-contain opacity-50 absolute inset-0 m-auto mix-blend-screen -z-10 blur-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logo.png" alt="Songweaver Logo" className="w-10 h-10 object-contain opacity-50 absolute inset-0 m-auto mix-blend-screen -z-10 blur-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
             <div className="bg-gradient-to-br from-accent-light to-accent w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-accent/20 relative z-10">
               <Plus className="w-6 h-6 text-white relative z-10" />
             </div>
@@ -278,7 +278,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
                 }}
                 whileHover={{ scale: 1.0, backgroundColor: 'rgba(239, 68, 68, 0.0)' }}
                 whileTap={{ scale: 0.9 }}
-                className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-gray-200 hover:text-red-400 rounded-full transition-colors z-20"
+                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-200 hover:text-red-400 rounded-full transition-colors z-20"
                 onClick={(e) => handleDeleteProject(e, project.id)}
                 aria-label="Delete project"
               >
