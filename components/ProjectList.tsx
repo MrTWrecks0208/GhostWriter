@@ -50,8 +50,11 @@ const ProjectList: React.FC<ProjectListProps> = ({ onSelectProject, onGoToPricin
               feedback: typeof data.feedback === 'string' ? data.feedback : '',
               companion: data.companion || companions[0],
               messages: Array.isArray(data.messages) ? data.messages : [{ sender: 'greeting', content: companions[0].greeting }],
-              activeTab: (data.activeTab === 'editor' || data.activeTab === 'chat' || data.activeTab === 'recordings') ? data.activeTab : 'editor',
-              audioClips: Array.isArray(data.audioClips) ? data.audioClips : []
+              activeTab: (data.activeTab === 'editor' || data.activeTab === 'chat' || data.activeTab === 'recordings' || data.activeTab === 'history') ? data.activeTab : 'editor',
+              audioClips: Array.isArray(data.audioClips) ? data.audioClips : [],
+              uid: data.uid || auth.currentUser?.uid || '',
+              isShared: !!data.isShared,
+              collaborators: Array.isArray(data.collaborators) ? data.collaborators : []
             };
             projectData.push(project);
           }

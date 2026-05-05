@@ -42,6 +42,7 @@ const suggestionGroups = [
       { type: SuggestionType.IMPROVE, icon: <MagicWandIcon className="w-4 h-4" /> },
       { type: SuggestionType.CHORDS, icon: <ChordsIcon className="w-4 h-4" /> },
       { type: SuggestionType.GENERATE_BEAT, icon: <DrumIcon className="w-4 h-4" /> },
+      { type: SuggestionType.GENERATE_CLIP, icon: <MusicIcon className="w-4 h-4" /> },
       { type: SuggestionType.EXPORT_ZIP, icon: <ArchiveIcon className="w-4 h-4" /> },
     ]
   },
@@ -52,6 +53,7 @@ const suggestionGroups = [
       { type: SuggestionType.TONE_SWITCHER, icon: <SlidersIcon className="w-4 h-4" /> },
       { type: SuggestionType.FIT_TO_STYLE, icon: <UserIcon className="w-4 h-4" /> },
       { type: SuggestionType.MELODY, icon: <MusicNoteIcon className="w-4 h-4" /> },
+      { type: SuggestionType.MELODY_HARMONIZATION, icon: <MusicNoteIcon className="w-4 h-4" /> },
       { type: SuggestionType.ORIGINALITY_CHECK, icon: <ShieldCheckIcon className="w-4 h-4" /> },
       { type: SuggestionType.VERSION_HISTORY, icon: <HistoryIcon className="w-4 h-4" /> },
       { type: SuggestionType.STEM_SPLITTER, icon: <ScissorsIcon className="w-4 h-4" /> },
@@ -170,7 +172,7 @@ const SuggestionControls: React.FC<SuggestionControlsProps> = ({ onSuggestionSel
                      return groupCost > 0 ? (
                        <div className="flex items-center gap-1"><Zap className="w-3 h-3 text-yellow-500" /> {groupCost} Credits</div>
                      ) : (
-                       <span className="px-1.5 py-0.5 rounded-md bg-accent/20 text-accent">Free</span>
+                       <span className="px-1.5 py-0.5 rounded-md text-yellow-500">Free</span>
                      );
                    })()}
                  </div>

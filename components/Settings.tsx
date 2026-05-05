@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { User, CreditCard, ArrowLeft, Save } from 'lucide-react';
-import { auth } from '../firebase';
+import { User, CreditCard, ArrowLeft, Save, Zap } from 'lucide-react';
+import { auth, db } from '../firebase';
 import { updateProfile } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface SettingsProps {
   onBack: () => void;
@@ -14,6 +15,41 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
   const [displayName, setDisplayName] = useState(auth.currentUser?.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [autoTopUp, setAutoTopUp] = useState(false);
+  const [isTopUpSaving, setIsTopUpSaving] = useState(false);
+
+  useEffect(() => {
+    async function fetchUserSettings() {
+      if (!auth.currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setAutoTopUp(userDoc.data().autoTopUp === true);
+        }
+      } catch (error) {
+        console.error("Error fetching user settings:", error);
+      }
+    }
+    fetchUserSettings();
+  }, []);
+
+  const handleToggleAutoTopUp = async () => {
+    if (!auth.currentUser) return;
+    setIsTopUpSaving(true);
+    const newValue = !autoTopUp;
+    setAutoTopUp(newValue);
+    try {
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        autoTopUp: newValue
+      });
+    } catch (error) {
+      console.error("Error updating auto top-up:", error);
+      // Revert on error
+      setAutoTopUp(!newValue);
+    } finally {
+      setIsTopUpSaving(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +172,30 @@ const Settings: React.FC<SettingsProps> = ({ onBack, onGoToPricing }) => {
                   >
                     Upgrade
                   </button>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold">Credit Settings</h3>
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-accent" />
+                        Automatic Top-up
+                      </h4>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Automatically purchase additional credits when your balance falls below 10 credits.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleAutoTopUp}
+                      disabled={isTopUpSaving}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${autoTopUp ? 'bg-accent' : 'bg-gray-600'} ${isTopUpSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoTopUp ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">

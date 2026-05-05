@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LayoutGrid, Settings, CreditCard, LogOut, ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-react';
 import { User, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import { useUserCredits } from '../hooks/useUserCredits';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface SidebarProps {
   currentView: string;
@@ -14,6 +16,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
+  const { credits, loading: creditsLoading } = useUserCredits(user?.uid);
+  const subscription = useSubscription();
+
   const handleSignOut = () => {
     signOut(auth);
   };
@@ -58,13 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, user }) => {
               key={item.id}
               onClick={() => setView(item.id)}
               title={isCollapsed ? item.label : undefined}
-              className={`flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 py-3 text-lg tracking-wide font-medium transition-all ${
                 isActive
-                  ? 'bg-white/10 text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? 'text-pink-300'
+                  : 'text-gray-400 hover:text-pink-400'
               } ${isCollapsed ? 'px-0 justify-center w-12 mx-auto' : 'px-4 w-full'}`}
             >
-              <Icon className="w-5 h-5 shrink-0" />
+              <Icon className="w-7 h-7 shrink-0" />
               {!isCollapsed && <span>{item.label}</span>}
             </button>
           );
@@ -111,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, user }) => {
           
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`flex items-center hover:bg-white/5 rounded-xl transition-colors py-2 ${isCollapsed ? 'justify-center w-12 mx-auto' : 'gap-3 px-2 w-full'}`} 
+            className={`flex items-center hover:bg-white/5 rounded-xl transition-colors p-2 ${isCollapsed ? 'justify-center w-10 mx-auto' : 'gap-3 w-full'}`} 
             title={isCollapsed ? (user?.isAnonymous ? 'Guest Artist' : user?.email || '') : undefined}
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-600 to-pink-500 flex items-center justify-center overflow-hidden shrink-0">
@@ -123,12 +128,44 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, user }) => {
             </div>
             {!isCollapsed && (
               <div className="flex flex-col overflow-hidden text-left flex-1">
-                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider truncate">
+                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate">
                     {user?.isAnonymous ? 'Guest Mode' : 'Account'}
                  </span>
-                 <span className="text-sm font-semibold truncate text-white">
+                 <span className="text-sm font-semibold truncate text-white leading-tight">
                     {user?.isAnonymous ? 'Guest Artist' : user?.email}
                  </span>
+                 
+                 {!isCollapsed && (
+                   <div className="w-full mt-1.5 pointer-events-none">
+                     <div className="w-full overflow-hidden flex flex-col gap-1">
+                       <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                         <div 
+                           className="h-full bg-gradient-to-r from-accent to-accent-light rounded-full transition-all duration-500 ease-out" 
+                           style={{ 
+                             width: `${Math.min(100, Math.max(0, ((credits ?? 0) / (() => {
+                               switch (subscription.tier) {
+                                 case 'Rising Artist': return 500;
+                                 case 'Headliner': return 1500;
+                                 case 'Legend': return 5000;
+                                 default: return 60;
+                               }
+                             })()) * 100))}%` 
+                           }} 
+                         />
+                       </div>
+                       <div className="flex justify-between items-center w-full">
+                         <span className="text-[10px] text-gray-400 font-medium text-left">{credits ?? 0} / {(() => {
+                             switch (subscription.tier) {
+                               case 'Rising Artist': return 500;
+                               case 'Headliner': return 1500;
+                               case 'Legend': return 5000;
+                               default: return 60;
+                             }
+                           })()} credits</span>
+                       </div>
+                     </div>
+                   </div>
+                 )}
               </div>
             )}
           </button>

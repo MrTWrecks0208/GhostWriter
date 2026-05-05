@@ -15,6 +15,7 @@ type View = 'landing' | 'signin' | 'projects' | 'workspace' | 'pricing' | 'setti
 function App() {
   const [view, setView] = useState<View>('landing');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectOwnerId, setCurrentProjectOwnerId] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -27,16 +28,30 @@ function App() {
         if (error instanceof Error && error.message.includes('the client is offline')) {
           console.error("Please check your Firebase configuration. ");
         }
-        // Skip logging for other errors, as this is simply a connection test.
       }
     }
     testConnection();
+
+    const params = new URLSearchParams(window.location.search);
+    const sharedParam = params.get('shared');
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setIsLoading(false);
       if (user) {
-        setView('projects');
+        if (sharedParam) {
+           const [oId, pId] = sharedParam.split('_');
+           if (oId && pId) {
+             setCurrentProjectOwnerId(oId);
+             setCurrentProjectId(pId);
+             setView('workspace');
+             window.history.replaceState({}, document.title, "/");
+           } else {
+             setView('projects');
+           }
+        } else if (view === 'landing' || view === 'signin') {
+           setView('projects');
+        }
       } else {
         setView('landing');
       }
@@ -80,11 +95,13 @@ function App() {
   
   const handleSelectProject = useCallback((projectId: string) => {
     setCurrentProjectId(projectId);
+    setCurrentProjectOwnerId(null);
     setView('workspace');
   }, []);
 
   const handleBackToProjects = useCallback(() => {
     setCurrentProjectId(null);
+    setCurrentProjectOwnerId(null);
     setView('projects');
   }, []);
 
@@ -109,7 +126,10 @@ function App() {
       {user && view !== 'landing' && view !== 'signin' && (
         <div className="hidden md:block">
           <Sidebar currentView={view} setView={(v) => {
-            if (v === 'projects') setCurrentProjectId(null);
+            if (v === 'projects') {
+               setCurrentProjectId(null);
+               setCurrentProjectOwnerId(null);
+            }
             setView(v as View);
           }} user={user} />
         </div>
@@ -117,21 +137,21 @@ function App() {
       <div className="flex-1 overflow-auto bg-main relative">
         {(view === 'landing' || view === 'signin') && !user && (
           <div className="relative min-h-screen w-full">
-            <Landing 
-              onSignInClick={() => handleGoToSignIn(false)}
-              onSignUpClick={() => handleGoToSignIn(true)}
-              onGuestClick={handleGuestLogin}
-            />
-            {view === 'signin' && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                <SignIn 
-                  onStart={handleStart} 
-                  initialIsSignUp={isSignUp}
-                  onBack={() => setView('landing')}
-                  isModal={true}
-                />
-              </div>
-            )}
+             <Landing 
+               onSignInClick={() => handleGoToSignIn(false)}
+               onSignUpClick={() => handleGoToSignIn(true)}
+               onGuestClick={handleGuestLogin}
+             />
+             {view === 'signin' && (
+               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                 <SignIn 
+                   onStart={handleStart} 
+                   initialIsSignUp={isSignUp}
+                   onBack={() => setView('landing')}
+                   isModal={true}
+                 />
+               </div>
+             )}
           </div>
         )}
         {view === 'projects' && user && (
@@ -140,7 +160,7 @@ function App() {
         {view === 'pricing' && user && <Pricing onBack={handleBackToProjects} />}
         {view === 'settings' && user && <Settings onBack={handleBackToProjects} onGoToPricing={handleGoToPricing} />}
         {view === 'workspace' && currentProjectId && user && (
-          <Workspace projectId={currentProjectId} onBack={handleBackToProjects} onGoToPricing={handleGoToPricing} />
+           <Workspace projectId={currentProjectId} ownerId={currentProjectOwnerId || user.uid} onBack={handleBackToProjects} onGoToPricing={handleGoToPricing} />
         )}
       </div>
     </div>

@@ -35,17 +35,23 @@ import { Zap } from 'lucide-react';
 
 interface WorkspaceProps {
     projectId: string;
+    ownerId?: string;
     onBack: () => void;
     onGoToPricing: () => void;
 }
 
 let isStorageAvailable = true;
 
-const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ projectId, ownerId, onBack, onGoToPricing }) => {
+    const defaultOwnerId = ownerId || auth.currentUser?.uid || '';
+    const isOwner = defaultOwnerId === auth.currentUser?.uid;
     const subscription = useSubscription();
     const { credits } = useUserCredits(auth.currentUser?.uid);
     // Project Metadata
     const [projectTitle, setProjectTitle] = useState('Untitled Song');
+    const [isShared, setIsShared] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [shareUrl, setShareUrl] = useState('');
 
     // Core editor state
     const [lyrics, setLyrics] = useState<string>('');
@@ -102,8 +108,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
     useEffect(() => {
         if (!auth.currentUser) return;
 
-        const path = `users/${auth.currentUser.uid}/projects/${projectId}`;
-        const projectRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId);
+        const path = `users/${defaultOwnerId}/projects/${projectId}`;
+        const projectRef = doc(db, 'users', defaultOwnerId, 'projects', projectId);
         
         const unsubscribe = onSnapshot(projectRef, (docSnap) => {
             try {
@@ -145,6 +151,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                         
                         // We intentionally do not load activeTab from the database 
                         // so that opening a project always defaults to the 'editor' tab.
+                        if (data.isShared !== undefined && data.isShared !== isShared) {
+                            setIsShared(data.isShared);
+                        }
 
                         if (!isLoaded) {
                             // On initial load, set the lastSavedDataRef
@@ -176,7 +185,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
     const saveData = useCallback(async (isManualSave: boolean = false) => {
         if (!isLoaded || !auth.currentUser) return;
         setIsSaving(true);
-        const path = `users/${auth.currentUser.uid}/projects/${projectId}`;
+        const path = `users/${defaultOwnerId}/projects/${projectId}`;
         try {
             // Check for base64 audio clips and upload them to Firebase Storage to avoid 1MB Firestore limit
             let updatedClips = [...audioClips];
@@ -186,7 +195,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                 const clip = updatedClips[i];
                 if (isStorageAvailable && storage && clip.audioData && clip.audioData.startsWith('data:')) {
                     try {
-                        const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clip.id}`);
+                        const storageRef = ref(storage, `users/${defaultOwnerId}/projects/${projectId}/audio/${clip.id}`);
                         await uploadString(storageRef, clip.audioData, 'data_url');
                         const downloadURL = await getDownloadURL(storageRef);
                         updatedClips[i] = { ...clip, audioData: downloadURL };
@@ -207,7 +216,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                 setAudioClips(updatedClips);
             }
 
-            const projectRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId);
+            const projectRef = doc(db, 'users', defaultOwnerId, 'projects', projectId);
             await updateDoc(projectRef, {
                 title: projectTitle || 'Untitled Song',
                 lyrics,
@@ -222,7 +231,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
 
             if (isManualSave) {
                 // Create a version snapshot on manual save
-                const versionRef = collection(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions');
+                const versionRef = collection(db, 'users', defaultOwnerId, 'projects', projectId, 'versions');
                 await addDoc(versionRef, {
                     timestamp: Date.now(),
                     lyrics,
@@ -252,7 +261,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         if (activeTab !== 'history' || !auth.currentUser) return;
         
         setIsVersionsLoading(true);
-        const versionsRef = collection(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions');
+        const versionsRef = collection(db, 'users', defaultOwnerId, 'projects', projectId, 'versions');
         const q = query(versionsRef, orderBy('timestamp', 'desc'));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -283,7 +292,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
         if (!auth.currentUser) return;
         // We cannot use window.confirm in an iframe, so we just proceed
         try {
-            const versionRef = doc(db, 'users', auth.currentUser.uid, 'projects', projectId, 'versions', versionId);
+            const versionRef = doc(db, 'users', defaultOwnerId, 'projects', projectId, 'versions', versionId);
             await deleteDoc(versionRef);
         } catch (error) {
             console.error("Error deleting version:", error);
@@ -727,7 +736,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             
             if (isStorageAvailable && storage) {
                 try {
-                    const storageRef = ref(storage, `users/${auth.currentUser.uid}/projects/${projectId}/audio/${clipId}`);
+                    const storageRef = ref(storage, `users/${defaultOwnerId}/projects/${projectId}/audio/${clipId}`);
                     await uploadBytes(storageRef, blob);
                     downloadURL = await getDownloadURL(storageRef);
                 } catch (uploadError: any) {
@@ -840,6 +849,38 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
             default:
                 return null;
         }
+    };
+
+    const handleShareClick = async () => {
+        if (!isOwner) return;
+        if (subscription.tier !== 'Legend') {
+           setSuggestionError('Collaboration requires the Legend tier. Please upgrade.');
+           onGoToPricing();
+           return;
+        }
+        setIsShareModalOpen(true);
+        if (!isShared) {
+            try {
+                const projectRef = doc(db, 'users', defaultOwnerId, 'projects', projectId);
+                await updateDoc(projectRef, { isShared: true, collaborators: [] });
+                setIsShared(true);
+            } catch (err) {
+                console.error("Failed to make project shared", err);
+            }
+        }
+        const url = `${window.location.origin}${window.location.pathname}?shared=${defaultOwnerId}_${projectId}`;
+        setShareUrl(url);
+    };
+
+    const copyShareUrl = async () => {
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setSuggestion('Share link copied to clipboard!');
+            setTimeout(() => setSuggestion(''), 3000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+        setIsShareModalOpen(false);
     };
 
     return (
@@ -1192,10 +1233,51 @@ const Workspace: React.FC<WorkspaceProps> = ({ projectId, onBack, onGoToPricing 
                             </div>
                         )}
                     </div>
+                    {isOwner && (
+                        <button onClick={handleShareClick} className="p-0 transition-colors flex-shrink-0 text-sky-500 hover:text-sky-400 active:text-sky-600 relative overflow-hidden w-6 h-6 flex items-center justify-center group mr-2" aria-label="Share project" title="Share Project">
+                            <UsersIcon className="w-5 h-5" />
+                        </button>
+                    )}
                     <button onClick={() => setIsCompanionSelectorOpen(true)} className="p-0 transition-colors flex-shrink-0 text-yellow-500 hover:text-yellow-400 active:text-yellow-600 relative overflow-hidden w-6 h-6 flex items-center justify-center group" aria-label="Change companion" title="Change AI Companion">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bot-message-square-icon lucide-bot-message-square"><path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/></svg>
                     </button>
                 </div>
+                
+                {isShareModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-[#1d2951] border border-white/10 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+                        >
+                            <h2 className="text-2xl font-bold text-white mb-2">Share Project</h2>
+                            <p className="text-sm text-gray-300 mb-6">Anyone with this link will be able to collaborate on this project.</p>
+                            
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={shareUrl}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none"
+                                />
+                                <button 
+                                    onClick={copyShareUrl}
+                                    className="px-4 py-3 bg-gradient-to-br from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-500 text-white font-bold rounded-xl whitespace-nowrap"
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                            <div className="mt-6 text-right">
+                                <button
+                                    onClick={() => setIsShareModalOpen(false)}
+                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 font-bold rounded-xl transition-all"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
                 
                 <div className="flex justify-center">
                     <div className="bg-white/5 p-1 rounded-full flex items-center gap-1">

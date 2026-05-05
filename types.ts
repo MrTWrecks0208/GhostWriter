@@ -14,11 +14,13 @@ export enum SuggestionType {
   CHORDS = 'Suggest Chords',
   GENERATE_BEAT = 'Suggest Beat',
   EXPORT_ZIP = 'Export Project as ZIP',
+  GENERATE_CLIP = 'Generate Clip (30s)',
 
   STYLE_MIMIC = 'Change Style',
   TONE_SWITCHER = 'Tone Switcher',
   FIT_TO_STYLE = 'Fit to Your Style',
   MELODY = 'Suggest Melody',
+  MELODY_HARMONIZATION = 'Melody Harmonization',
   ORIGINALITY_CHECK = 'Check Originality',
   VERSION_HISTORY = 'Version History',
   STEM_SPLITTER = 'Stem Splitter',
@@ -44,11 +46,13 @@ export const SUGGESTION_COSTS: Record<SuggestionType, number> = {
   [SuggestionType.CHORDS]: 3,
   [SuggestionType.GENERATE_BEAT]: 3,
   [SuggestionType.EXPORT_ZIP]: 3,
+  [SuggestionType.GENERATE_CLIP]: 3,
 
   [SuggestionType.STYLE_MIMIC]: 5,
   [SuggestionType.TONE_SWITCHER]: 5,
   [SuggestionType.FIT_TO_STYLE]: 5,
   [SuggestionType.MELODY]: 5,
+  [SuggestionType.MELODY_HARMONIZATION]: 5,
   [SuggestionType.ORIGINALITY_CHECK]: 5,
   [SuggestionType.VERSION_HISTORY]: 5,
   [SuggestionType.STEM_SPLITTER]: 5,
@@ -87,6 +91,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, SuggestionType[]> = {
     SuggestionType.CHORDS,
     SuggestionType.GENERATE_BEAT,
     SuggestionType.EXPORT_ZIP,
+    SuggestionType.GENERATE_CLIP,
   ],
   [SubscriptionTier.HEADLINER]: [
     SuggestionType.NEXT_LINES,
@@ -100,10 +105,12 @@ export const TIER_FEATURES: Record<SubscriptionTier, SuggestionType[]> = {
     SuggestionType.CHORDS,
     SuggestionType.GENERATE_BEAT,
     SuggestionType.EXPORT_ZIP,
+    SuggestionType.GENERATE_CLIP,
     SuggestionType.STYLE_MIMIC,
     SuggestionType.TONE_SWITCHER,
     SuggestionType.FIT_TO_STYLE,
     SuggestionType.MELODY,
+    SuggestionType.MELODY_HARMONIZATION,
     SuggestionType.ORIGINALITY_CHECK,
     SuggestionType.VERSION_HISTORY,
     SuggestionType.STEM_SPLITTER,
@@ -121,10 +128,12 @@ export const TIER_FEATURES: Record<SubscriptionTier, SuggestionType[]> = {
     SuggestionType.CHORDS,
     SuggestionType.GENERATE_BEAT,
     SuggestionType.EXPORT_ZIP,
+    SuggestionType.GENERATE_CLIP,
     SuggestionType.STYLE_MIMIC,
     SuggestionType.TONE_SWITCHER,
     SuggestionType.FIT_TO_STYLE,
     SuggestionType.MELODY,
+    SuggestionType.MELODY_HARMONIZATION,
     SuggestionType.ORIGINALITY_CHECK,
     SuggestionType.VERSION_HISTORY,
     SuggestionType.STEM_SPLITTER,
@@ -187,8 +196,11 @@ export interface Project {
   feedback: string;
   companion: Companion;
   messages: ChatMessage[];
-  activeTab: 'editor' | 'chat';
+  activeTab: 'editor' | 'chat' | 'recordings' | 'history';
   audioClips?: AudioClip[];
+  isShared?: boolean;
+  collaborators?: string[];
+  uid: string;
 }
 
 export interface ProjectVersion {

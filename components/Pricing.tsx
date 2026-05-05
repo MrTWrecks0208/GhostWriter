@@ -5,9 +5,9 @@ import { auth } from '../firebase';
 
 const aiFeatureMapping: Record<string, string[]> = {
   'Core Writing Tools': ['Suggest Next Lines', 'Find Rhymes', 'Review Lyrics', 'Check Common Phrases', 'Suggest Structure'],
-  'All Writing Tools': ['All Core Tools', 'Prompt to Lyrics', 'Improve Lyrics', 'Suggest Chords', 'Suggest Beat', 'Export Project as ZIP', 'Sentiment Analysis'],
-  'Advanced AI Tools': ['All Writing Tools', 'Fit to Your Style', 'Suggest Melody', 'Change Style', 'Tone Switcher', 'Check Originality', 'Stem Splitter', 'Generate Hook for TikTok'],
-  'All Features Unlocked': ['All Advanced Tools', 'Generate Song', 'Radio-Ready Polish', 'Studio Mode', 'Export Recordings to DAW Formats']
+  'All Writing Tools': ['All Core Tools', 'Prompt to Lyrics', 'Improve Lyrics', 'Suggest Chords', 'Suggest Beat', 'Export Project as ZIP', 'Sentiment Analysis', 'Generate Clip (30s)'],
+  'Advanced AI Tools': ['All Writing Tools', 'Fit to Your Style', 'Suggest Melody', 'Melody Harmonization', 'Change Style', 'Tone Switcher', 'Check Originality', 'Stem Splitter', 'Generate Hook for TikTok'],
+  'All Features Unlocked': ['All Advanced Tools', 'Generate Song', 'Radio-Ready Polish', 'Studio Mode', 'Export Recordings to DAW Formats', 'Collaboration Tools']
 };
 
 interface PricingProps {
@@ -22,7 +22,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
       name: 'Open Mic',
       price: { monthly: 0, annually: 0 },
       description: 'Perfect for getting started.',
-      features: ['60 Credits / Month', 'Core Writing Tools', '3 Projects', '2 Full Song Generations'],
+      features: ['60 Credits / Month', 'Core Writing Tools', '3 Projects', '2 Clip Generations'],
       buttonText: 'Start Free',
       isCurrent: true,
     },
@@ -30,7 +30,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
       name: 'Rising Artist',
       price: { monthly: 12, annually: 120 },
       description: 'For serious songwriters.',
-      features: ['500 Credits / Month', 'All Writing Tools', '20 Projects', '10 Full Song Generations', 'Melody + Chord Suggestions', 'Choice of AI Co-Writer'],
+      features: ['500 Credits / Month', 'All Writing Tools', '20 Projects', '10 Clip Generations', 'Melody + Chord Suggestions', 'Choice of AI Co-Writer'],
       buttonText: 'Upgrade',
       priceId: { monthly: 'price_tier1_monthly', annually: 'price_tier1_annually' },
       isPopular: false,
@@ -48,7 +48,7 @@ const Pricing: React.FC<PricingProps> = ({ onBack }) => {
       name: 'Legend',
       price: { monthly: 48, annually: 480 },
       description: 'The ultimate creative suite.',
-      features: ['5,000 Credits / Month', 'All Features Unlocked', 'Unlimited Projects', '100 Full Song Generations', 'Studio Mode', 'Collaboration Tool', 'Export Files to DAW'],
+      features: ['5,000 Credits / Month', 'All Features Unlocked', 'Unlimited Projects', '100 Full Song Generations', 'Studio Mode', 'Collaboration Tools', 'Export Files to DAW'],
       buttonText: 'Upgrade',
       priceId: { monthly: 'price_tier3_monthly', annually: 'price_tier3_annually' },
     },
